@@ -1,0 +1,4 @@
+level: INFO
+console: true
+file: true
+filename: run.log
