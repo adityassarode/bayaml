@@ -1,48 +1,139 @@
 from __future__ import annotations
-from typing import Any
+
+from typing import Any, Optional
+import numpy as np
 
 from ..context import Context
 from ..integrations.model_registry import ModelRegistry
+from ..integrations.base_backend import BaseBackend
+from ..guardrails.schema_guard import validate_schema
 
 
 class ModelModule:
-    """Model lifecycle controller — NO ML logic here."""
+    """
+    Model lifecycle controller.
+
+    Responsibilities:
+    - Model resolution
+    - Training boundary enforcement
+    - Deterministic seed propagation
+    - Strict inference boundary
+    """
 
     def __init__(self, context: Context) -> None:
-        self.context = context
+        self._ctx: Context = context
 
-    # -------------------------------------------------
-    # CREATE (ATTACH ONLY — NO TRAINING)
-    # -------------------------------------------------
+    # =====================================================
+    # Create
+    # =====================================================
+
     def create(self, name: str, *, target: str) -> Any:
-        """
-        Resolve model and attach to context.
-        Deterministic — does NOT train.
-        """
 
-        # Guardrail 1 — dataset must exist
-        self.context.ensure_dataframe()
+        self._ctx.ensure_dataframe()
 
-        df = self.context.dataframe
-        if target not in df.columns:
-            raise ValueError(f"Target column '{target}' not found")
+        current_target = self._ctx.get_target()
 
-        # Guardrail 2 — set target BEFORE split
-        self.context.target = target
+        if current_target is None:
+            self._ctx.set_target(target)
+        elif current_target != target:
+            raise RuntimeError(
+                "Target already set. Cannot change target after initialization."
+            )
 
-        # Resolve backend
-        backend, model_key = ModelRegistry.resolve(name)
+        backend, model_name = ModelRegistry.resolve(name)
 
-        # Instantiate model
-        model = backend.create_model(model_key)
+        if not isinstance(backend, BaseBackend):
+            raise TypeError("Resolved backend is invalid.")
 
-        # Attach to context
-        self.context.model = model
-        self.context.backend = backend
+        model = backend.create_model(model_name)
 
-        return model
+        self._ctx.set_model(model, backend)
 
-    def __repr__(self) -> str:
-        if self.context.model is None:
-            return "<ModelModule model=None>"
-        return f"<ModelModule model={self.context.model.__class__.__name__}>"
+        self._ctx.set_model(model, backend)
+        return self
+
+    # =====================================================
+    # Train
+    # =====================================================
+
+    def train(self, **kwargs: Any) -> "ModelModule":
+
+        if not self._ctx.is_split:
+            raise RuntimeError("Dataset must be split before training.")
+
+        model = self._ctx.get_model()
+        backend = self._ctx.get_backend()
+
+        if model is None or backend is None:
+            raise RuntimeError("Model not created.")
+
+        X_train, _, y_train, _ = self._ctx.get_split_data()
+
+        seed = self._ctx.get_seed()
+        if "seed" not in kwargs:
+            kwargs["seed"] = seed
+
+        trained_model = backend.train(
+            model=model,
+            X_train=X_train,
+            y_train=y_train,
+            **kwargs,
+        )
+
+        self._ctx.set_model(trained_model, backend)
+        self._ctx.mark_fitted()
+
+        return self
+
+    # =====================================================
+    # Predict (STRICT INFERENCE BOUNDARY)
+    # =====================================================
+
+    def predict(self, X: Optional[Any] = None) -> np.ndarray:
+
+        if not self._ctx.is_fitted:
+            raise RuntimeError("Model not trained.")
+
+        model = self._ctx.get_model()
+        backend = self._ctx.get_backend()
+
+        if model is None or backend is None:
+            raise RuntimeError("Model state invalid.")
+
+        # -------------------------------------------------
+        # Default: test set prediction
+        # -------------------------------------------------
+        if X is None:
+            if not self._ctx.is_split:
+                raise RuntimeError("No split data available.")
+
+            _, X_test, _, _ = self._ctx.get_split_data()
+            X = X_test
+
+        # -------------------------------------------------
+        # External data: schema validation required
+        # -------------------------------------------------
+        else:
+            reference_df = self._ctx.get_dataframe()
+
+            if reference_df is None:
+                raise RuntimeError("Reference dataset unavailable.")
+
+            # Validate strict schema match
+            validate_schema(
+                reference=reference_df.drop(columns=[self._ctx.get_target()]),
+                new=X,
+            )
+
+        # -------------------------------------------------
+        # Backend inference (no model bypass)
+        # -------------------------------------------------
+        preds = backend.predict(
+            model=model,
+            X=X,
+        )
+
+        # Explicit overwrite (deterministic)
+        self._ctx.set_predictions(preds)
+
+        return preds

@@ -1,7 +1,4 @@
-"""
-Baya Project Core
-Lifecycle root — no validation during construction.
-"""
+# baya/project.py
 
 from __future__ import annotations
 
@@ -21,10 +18,13 @@ from .core.model import ModelModule
 from .core.evaluate import EvaluateModule
 from .core.transform import TransformModule
 
+from .integrations import bootstrap_integrations
+
 
 class Project:
     """
     User entry point.
+    Thin orchestration layer.
     """
 
     def __init__(
@@ -33,14 +33,33 @@ class Project:
         *,
         target: Optional[str] = None,
         workspace: Optional[Union[str, Path]] = None,
+        seed: int = 42,
     ) -> None:
 
-        self.context = Context(workspace=workspace)
+        # -------------------------------------------------
+        # Deterministic Backend Registration (Idempotent)
+        # -------------------------------------------------
+        bootstrap_integrations()
 
-        # Declare only (no validation)
-        self.context.set_target(target)
+        # -------------------------------------------------
+        # Workspace normalization
+        # -------------------------------------------------
+        workspace_path: Optional[Path] = None
+        if workspace is not None:
+            workspace_path = Path(workspace).resolve()
+            workspace_path.mkdir(parents=True, exist_ok=True)
 
-        # Modules
+        # -------------------------------------------------
+        # Context initialization
+        # -------------------------------------------------
+        self.context = Context(
+            workspace=workspace_path,
+            seed=seed,
+        )
+
+        # -------------------------------------------------
+        # Module wiring
+        # -------------------------------------------------
         self.data = DataModule(self.context)
         self.clean = CleanModule(self.context)
         self.encode = EncodeModule(self.context)
@@ -50,11 +69,21 @@ class Project:
         self.evaluate = EvaluateModule(self.context)
         self.transform = TransformModule(self.context)
 
+        # -------------------------------------------------
         # Optional ingestion
+        # -------------------------------------------------
         if data is not None:
             self.data.load(data)
 
-    # ----------------------------------------------
+        # -------------------------------------------------
+        # Optional target declaration
+        # -------------------------------------------------
+        if target is not None and self.context.get_dataframe() is not None:
+            self.context.set_target(target)
+
+    # =====================================================
+    # Read-only accessors
+    # =====================================================
 
     @property
     def dataframe(self) -> Optional[pd.DataFrame]:
@@ -63,6 +92,10 @@ class Project:
     @property
     def target(self) -> Optional[str]:
         return self.context.get_target()
+
+    # =====================================================
+    # Representation
+    # =====================================================
 
     def __repr__(self) -> str:
         df = self.context.get_dataframe()

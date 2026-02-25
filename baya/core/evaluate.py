@@ -1,19 +1,8 @@
-"""
-Baya Evaluate Module
-
-Handles:
-- Classification metrics
-- Regression metrics
-- Confusion matrix
-- ROC AUC
-- Probability-based metrics
-"""
-
 from __future__ import annotations
 
-from typing import Optional, Dict, Any
-
+from typing import Dict, Any, Callable
 import numpy as np
+
 from sklearn.metrics import (
     accuracy_score,
     precision_score,
@@ -22,8 +11,8 @@ from sklearn.metrics import (
     r2_score,
     mean_squared_error,
     mean_absolute_error,
-    confusion_matrix,
-    classification_report,
+    confusion_matrix as sk_confusion_matrix,
+    classification_report as sk_classification_report,
     roc_auc_score,
 )
 
@@ -33,65 +22,102 @@ from ..context import Context
 class EvaluateModule:
     """
     Model evaluation operations.
+    Pure computation layer.
+
+    Rules:
+    - Requires fitted model
+    - Requires dataset split
+    - Requires test-set predictions
+    - Must not mutate model
+    - Must write metrics via Context API only
+    - Must respect task type
     """
 
     def __init__(self, context: Context) -> None:
-        self.context = context
+        self._ctx: Context = context
 
-    # -------------------------------------------------
-    # Internal Checks
-    # -------------------------------------------------
+    # =====================================================
+    # Internal Guards
+    # =====================================================
 
-    def _ensure_model(self) -> None:
-        if self.context.model is None:
-            raise RuntimeError("No trained model found.")
+    def _ensure_ready(self) -> None:
+        if not self._ctx.is_fitted:
+            raise RuntimeError("Model not trained.")
 
-        if self.context.X_test is None or self.context.y_test is None:
-            raise RuntimeError("No test data available. Run splitData().")
+        if not self._ctx.is_split:
+            raise RuntimeError("Dataset not split.")
 
-    def _predict(self) -> np.ndarray:
-        return self.context.model.predict(self.context.X_test)
+        if self._ctx.get_predictions() is None:
+            raise RuntimeError(
+                "No predictions found. Call model.predict() first."
+            )
 
-    # -------------------------------------------------
-    # Classification Evaluation
-    # -------------------------------------------------
+        if self._ctx.get_prediction_scope() != "test":
+            raise RuntimeError(
+                "Evaluation requires test-set predictions."
+            )
 
-    def evaluateClassifier(
+    def _get_test_data(self) -> tuple[Any, Any]:
+        _, X_test, _, y_test = self._ctx.get_split_data()
+        return X_test, y_test
+
+    def _get_predictions(self) -> np.ndarray:
+        preds = self._ctx.get_predictions()
+        if preds is None:
+            raise RuntimeError("Predictions missing.")
+        return preds
+
+    # =====================================================
+    # Classification Metrics
+    # =====================================================
+
+    def evaluate_classifier(
         self,
+        *,
         average: str = "weighted",
     ) -> Dict[str, float]:
-        """
-        Compute classification metrics.
-        """
 
-        self._ensure_model()
+        self._ensure_ready()
 
-        y_pred = self._predict()
-        y_true = self.context.y_test
+        if self._ctx.get_task_type() != "classification":
+            raise RuntimeError(
+                "Classifier metrics used on non-classification task."
+            )
+
+        y_pred = self._get_predictions()
+        _, y_true = self._get_test_data()
 
         metrics = {
             "accuracy": accuracy_score(y_true, y_pred),
-            "precision": precision_score(y_true, y_pred, average=average, zero_division=0),
-            "recall": recall_score(y_true, y_pred, average=average, zero_division=0),
-            "f1": f1_score(y_true, y_pred, average=average, zero_division=0),
+            "precision": precision_score(
+                y_true, y_pred, average=average, zero_division=0
+            ),
+            "recall": recall_score(
+                y_true, y_pred, average=average, zero_division=0
+            ),
+            "f1": f1_score(
+                y_true, y_pred, average=average, zero_division=0
+            ),
         }
 
-        self.context.metrics = metrics
+        self._ctx.set_metrics(metrics)
         return metrics
 
-    # -------------------------------------------------
-    # Regression Evaluation
-    # -------------------------------------------------
+    # =====================================================
+    # Regression Metrics
+    # =====================================================
 
-    def evaluateRegressor(self) -> Dict[str, float]:
-        """
-        Compute regression metrics.
-        """
+    def evaluate_regressor(self) -> Dict[str, float]:
 
-        self._ensure_model()
+        self._ensure_ready()
 
-        y_pred = self._predict()
-        y_true = self.context.y_test
+        if self._ctx.get_task_type() != "regression":
+            raise RuntimeError(
+                "Regressor metrics used on non-regression task."
+            )
+
+        y_pred = self._get_predictions()
+        _, y_true = self._get_test_data()
 
         metrics = {
             "r2": r2_score(y_true, y_pred),
@@ -99,104 +125,105 @@ class EvaluateModule:
             "mae": mean_absolute_error(y_true, y_pred),
         }
 
-        self.context.metrics = metrics
+        self._ctx.set_metrics(metrics)
         return metrics
 
-    # -------------------------------------------------
-    # Classification Report
-    # -------------------------------------------------
-
-    def classificationReport(self) -> str:
-        """
-        Generate classification report.
-        """
-
-        self._ensure_model()
-
-        y_pred = self._predict()
-        y_true = self.context.y_test
-
-        report = classification_report(y_true, y_pred)
-        self.context.metrics = {"report": report}
-
-        return report
-
-    # -------------------------------------------------
+    # =====================================================
     # Confusion Matrix
-    # -------------------------------------------------
+    # =====================================================
 
-    def confusionMatrix(self) -> np.ndarray:
-        """
-        Compute confusion matrix.
-        """
+    def get_confusion_matrix(self) -> np.ndarray:
 
-        self._ensure_model()
+        self._ensure_ready()
 
-        y_pred = self._predict()
-        y_true = self.context.y_test
+        if self._ctx.get_task_type() != "classification":
+            raise RuntimeError(
+                "Confusion matrix only valid for classification."
+            )
 
-        cm = confusion_matrix(y_true, y_pred)
+        y_pred = self._get_predictions()
+        _, y_true = self._get_test_data()
 
-        self.context.metrics = {"confusion_matrix": cm}
+        cm = sk_confusion_matrix(y_true, y_pred)
+
+        self._ctx.set_metrics({"confusion_matrix": cm})
         return cm
 
-    # -------------------------------------------------
+    # =====================================================
+    # Classification Report
+    # =====================================================
+
+    def get_classification_report(self) -> str:
+
+        self._ensure_ready()
+
+        if self._ctx.get_task_type() != "classification":
+            raise RuntimeError(
+                "Classification report only valid for classification."
+            )
+
+        y_pred = self._get_predictions()
+        _, y_true = self._get_test_data()
+
+        report = sk_classification_report(y_true, y_pred)
+
+        self._ctx.set_metrics({"classification_report": report})
+        return report
+
+    # =====================================================
     # ROC AUC
-    # -------------------------------------------------
+    # =====================================================
 
-    def rocAuc(self) -> float:
-        """
-        Compute ROC AUC score.
+    def roc_auc(self) -> float:
 
-        Works only if model supports predict_proba.
-        """
+        self._ensure_ready()
 
-        self._ensure_model()
+        if self._ctx.get_task_type() != "classification":
+            raise RuntimeError("ROC AUC only valid for classification.")
 
-        model = self.context.model
+        model = self._ctx.get_model()
+        backend = self._ctx.get_backend()
 
-        if not hasattr(model, "predict_proba"):
-            raise RuntimeError("Model does not support probability predictions.")
+        if model is None or backend is None:
+            raise RuntimeError("Model state invalid.")
 
-        y_true = self.context.y_test
-        y_prob = model.predict_proba(self.context.X_test)
+        X_test, y_true = self._get_test_data()
 
-        # Binary classification assumed
+        y_prob = backend.predict_proba(model=model, X=X_test)
+
         if y_prob.shape[1] == 2:
             score = roc_auc_score(y_true, y_prob[:, 1])
         else:
             score = roc_auc_score(y_true, y_prob, multi_class="ovr")
 
-        self.context.metrics = {"roc_auc": score}
+        self._ctx.set_metrics({"roc_auc": score})
         return score
 
-    # -------------------------------------------------
+    # =====================================================
     # Custom Metric
-    # -------------------------------------------------
+    # =====================================================
 
-    def customMetric(
+    def custom_metric(
         self,
-        metric_function: Any,
+        metric_function: Callable[[Any, Any], float],
     ) -> float:
-        """
-        Apply custom metric function.
-        """
 
-        self._ensure_model()
+        self._ensure_ready()
 
-        y_pred = self._predict()
-        y_true = self.context.y_test
+        y_pred = self._get_predictions()
+        _, y_true = self._get_test_data()
 
         value = metric_function(y_true, y_pred)
 
-        self.context.metrics = {"custom_metric": value}
+        self._ctx.set_metrics({"custom_metric": value})
         return value
 
-    # -------------------------------------------------
+    # =====================================================
     # Representation
-    # -------------------------------------------------
+    # =====================================================
 
     def __repr__(self) -> str:
-        if self.context.metrics is None:
+        metrics = self._ctx.get_metrics()
+        if not metrics:
             return "<EvaluateModule metrics=None>"
-        return f"<EvaluateModule metrics={list(self.context.metrics.keys())}>"
+        return f"<EvaluateModule metrics={list(metrics.keys())}>"

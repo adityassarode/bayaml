@@ -1,111 +1,62 @@
-"""
-Baya Split Module
-
-Handles:
-- Train/Test splitting
-- Cross-validation
-"""
-
 from __future__ import annotations
 
-from typing import Optional, Any
-
+from typing import Any
 import pandas as pd
-from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.model_selection import train_test_split
 
 from ..context import Context
 
 
 class SplitModule:
     """
-    Data splitting operations.
+    Dataset splitting operations.
+
+    Deterministic.
+    Context-driven.
     """
 
     def __init__(self, context: Context) -> None:
-        self.context = context
+        self._ctx: Context = context
 
-    # -------------------------------------------------
-    # Train/Test Split
-    # -------------------------------------------------
+    # =====================================================
+    # Random Split
+    # =====================================================
 
-    def splitData(
-        self,
-        test_size: float = 0.2,
-        random_state: Optional[int] = 42,
-        shuffle: bool = True,
-    ) -> "SplitModule":
+    def random(self, *, test_size: float = 0.2) -> "SplitModule":
         """
-        Split dataset into train and test sets.
+        Deterministic random split using context seed.
         """
 
-        self.context.ensure_dataframe()
-        self.context.ensure_target()
+        self._ctx.ensure_dataframe()
+        self._ctx.ensure_target()
 
-        df = self.context.dataframe
-        target_col = self.context.target
+        if self._ctx.is_split:
+            raise RuntimeError("Dataset already split.")
 
-        if target_col not in df.columns:
-            raise ValueError(f"Target column '{target_col}' not found.")
+        df: pd.DataFrame = self._ctx.get_dataframe()
+        target: str = self._ctx.get_target()
+        seed: int = self._ctx.get_seed()
 
-        X = df.drop(columns=[target_col])
-        y = df[target_col]
+        X = df.drop(columns=[target])
+        y = df[target]
 
         X_train, X_test, y_train, y_test = train_test_split(
             X,
             y,
             test_size=test_size,
-            random_state=random_state,
-            shuffle=shuffle,
+            random_state=seed,
         )
 
-        self.context.X_train = X_train
-        self.context.X_test = X_test
-        self.context.y_train = y_train
-        self.context.y_test = y_test
+        self._ctx.set_split_data(X_train, X_test, y_train, y_test)
 
         return self
 
-    # -------------------------------------------------
-    # Cross Validation
-    # -------------------------------------------------
+    # =====================================================
+    # Default Train/Test Split (80/20)
+    # =====================================================
 
-    def crossValidate(
-        self,
-        model: Any,
-        cv: int = 5,
-        scoring: Optional[str] = None,
-    ) -> pd.Series:
+    def train_test(self) -> "SplitModule":
         """
-        Perform k-fold cross-validation.
+        Default deterministic 80/20 split.
         """
-
-        self.context.ensure_dataframe()
-        self.context.ensure_target()
-
-        df = self.context.dataframe
-        target_col = self.context.target
-
-        X = df.drop(columns=[target_col])
-        y = df[target_col]
-
-        scores = cross_val_score(
-            model,
-            X,
-            y,
-            cv=cv,
-            scoring=scoring,
-        )
-
-        return pd.Series(scores, name="cv_scores")
-
-    # -------------------------------------------------
-    # Representation
-    # -------------------------------------------------
-
-    def __repr__(self) -> str:
-        if self.context.X_train is not None:
-            rows = len(self.context.X_train)
-        else:
-            rows = 0
-
-        return f"<SplitModule train_rows={rows}>"
+        return self.random(test_size=0.2)

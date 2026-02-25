@@ -2,23 +2,46 @@ from __future__ import annotations
 
 import platform
 import sys
-import subprocess
-from typing import Dict
+from typing import Dict, List
+from importlib import metadata
 
 
 def capture_environment() -> Dict[str, object]:
+    """
+    Deterministic environment capture.
+
+    Includes:
+        - Python version
+        - Python implementation
+        - Platform
+        - Installed packages (name==version)
+    """
+
     return {
-        "python_version": sys.version,
+        "python_version": platform.python_version(),
+        "python_implementation": platform.python_implementation(),
         "platform": platform.platform(),
-        "packages": _pip_freeze(),
+        "packages": _installed_packages(),
     }
 
 
-def _pip_freeze() -> list[str]:
-    result = subprocess.run(
-        [sys.executable, "-m", "pip", "freeze"],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    return sorted(result.stdout.splitlines())
+# =====================================================
+# Package Capture (No subprocess)
+# =====================================================
+
+def _installed_packages() -> List[str]:
+    """
+    Deterministically list installed packages.
+    Avoids subprocess and pip dependency.
+    """
+
+    packages: List[str] = []
+
+    for dist in metadata.distributions():
+        name = dist.metadata.get("Name")
+        version = dist.version
+
+        if name and version:
+            packages.append(f"{name}=={version}")
+
+    return sorted(packages)
