@@ -1,80 +1,41 @@
-"""
-Sklearn Backend for Baya
-
-Provides model factory for sklearn-based models.
-"""
+# baya/integrations/sklearn_backend.py
 
 from __future__ import annotations
-
 from typing import Any, Dict, Type
 
-from ..base_backend import BaseBackend
-
-# Import sklearn models
 from sklearn.linear_model import LogisticRegression, LinearRegression
-from sklearn.ensemble import (
-    RandomForestClassifier,
-    RandomForestRegressor,
-    GradientBoostingClassifier,
-    GradientBoostingRegressor,
-)
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.svm import SVC, SVR
-from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+
+from .base_backend import BaseBackend
 
 
 class SklearnBackend(BaseBackend):
-    """
-    Backend responsible for building sklearn models.
-    """
 
     def __init__(self) -> None:
-        self._model_map: Dict[str, Type[Any]] = {
-            # Classification
+        self._models: Dict[str, Type[Any]] = {
+            "linear_regression": LinearRegression,
             "logistic_regression": LogisticRegression,
             "random_forest_classifier": RandomForestClassifier,
-            "svm_classifier": SVC,
-            "gradient_boosting_classifier": GradientBoostingClassifier,
-            "knn_classifier": KNeighborsClassifier,
-
-            # Regression
-            "linear_regression": LinearRegression,
             "random_forest_regressor": RandomForestRegressor,
+            "svm_classifier": SVC,
             "svm_regressor": SVR,
-            "gradient_boosting_regressor": GradientBoostingRegressor,
-            "knn_regressor": KNeighborsRegressor,
         }
 
-    # -------------------------------------------------
-    # Backend Identity
-    # -------------------------------------------------
-
+    # identity
+    @property
     def name(self) -> str:
         return "sklearn"
 
-    # -------------------------------------------------
-    # Build Model
-    # -------------------------------------------------
+    # lifecycle
+    def create_model(self, model_name: str, **kwargs: Any) -> Any:
+        if model_name not in self._models:
+            raise ValueError(f"Model '{model_name}' not supported by sklearn backend")
+        return self._models[model_name](**kwargs)
 
-    def build_model(
-        self,
-        model_name: str,
-        **kwargs: Any,
-    ) -> Any:
-        """
-        Build sklearn model from name.
-        """
+    def train(self, model: Any, X: Any, y: Any, **kwargs: Any) -> Any:
+        model.fit(X, y, **kwargs)
+        return model
 
-        if model_name not in self._model_map:
-            raise ValueError(
-                f"Model '{model_name}' not supported in SklearnBackend."
-            )
-
-        model_class = self._model_map[model_name]
-        return model_class(**kwargs)
-
-    # -------------------------------------------------
-    # List Available Models
-    # -------------------------------------------------
-
-    def available_models(self) -> list[str]:
-        return list(self._model_map.keys())
+    def predict(self, model: Any, X: Any) -> Any:
+        return model.predict(X)

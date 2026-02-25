@@ -1,136 +1,72 @@
 """
 Baya Model Registry
 
-Central registry mapping:
+Single source of truth mapping:
+model_alias -> (backend_name, backend_model_key)
 
-model_name  →  backend instance
-
-Supports:
-- Built-in backends
-- Custom injected backends
-- Plugin-registered backends
+NO backend imports outside this layer.
 """
 
 from __future__ import annotations
-
-from typing import Dict
+from typing import Dict, Tuple
 
 from .base_backend import BaseBackend
 
 
 class ModelRegistry:
-    """
-    Central model-to-backend registry.
-    """
+    """Central deterministic model resolution."""
 
-    # model_name → backend instance
-    _model_map: Dict[str, BaseBackend] = {}
+    # backend_name -> backend instance
+    _backends: Dict[str, BaseBackend] = {}
 
-    # backend_name → backend instance
-    _backend_map: Dict[str, BaseBackend] = {}
+    # public alias -> (backend_name, backend_model_key)
+    _models: Dict[str, Tuple[str, str]] = {}
 
-    # -------------------------------------------------
-    # Backend Registration
-    # -------------------------------------------------
-
+    # -------------------------------
+    # Backend registration
+    # -------------------------------
     @classmethod
     def register_backend(cls, backend: BaseBackend) -> None:
-        """
-        Register a backend instance.
+        name = backend.name
+        if name in cls._backends:
+            raise RuntimeError(f"Backend '{name}' already registered")
+        cls._backends[name] = backend
 
-        Example:
-            ModelRegistry.register_backend(SklearnBackend())
-        """
-
-        backend_name = backend.name()
-
-        cls._backend_map[backend_name] = backend
-
-    # -------------------------------------------------
-    # Model Registration
-    # -------------------------------------------------
-
+    # -------------------------------
+    # Model registration
+    # -------------------------------
     @classmethod
     def register_model(
         cls,
-        model_name: str,
+        alias: str,
         backend_name: str,
+        backend_model_key: str,
     ) -> None:
-        """
-        Map model name to backend.
-        """
+        if backend_name not in cls._backends:
+            raise RuntimeError(f"Backend '{backend_name}' not registered")
 
-        if backend_name not in cls._backend_map:
-            raise ValueError(
-                f"Backend '{backend_name}' not registered."
-            )
+        cls._models[alias] = (backend_name, backend_model_key)
 
-        cls._model_map[model_name] = cls._backend_map[backend_name]
-
-    # -------------------------------------------------
-    # Backend Lookup
-    # -------------------------------------------------
-
+    # -------------------------------
+    # Resolution (CRITICAL)
+    # -------------------------------
     @classmethod
-    def get_backend_for_model(
-        cls,
-        model_name: str,
-    ) -> BaseBackend:
-        """
-        Get backend responsible for model.
-        """
+    def resolve(cls, alias: str) -> tuple[BaseBackend, str]:
+        if alias not in cls._models:
+            raise ValueError(f"Model '{alias}' not registered")
 
-        if model_name not in cls._model_map:
-            raise ValueError(
-                f"Model '{model_name}' not registered in ModelRegistry."
-            )
+        backend_name, model_key = cls._models[alias]
+        backend = cls._backends[backend_name]
+        return backend, model_key
 
-        return cls._model_map[model_name]
-
-    # -------------------------------------------------
-    # Direct Backend Access
-    # -------------------------------------------------
-
-    @classmethod
-    def get_backend(
-        cls,
-        backend_name: str,
-    ) -> BaseBackend:
-        if backend_name not in cls._backend_map:
-            raise ValueError(
-                f"Backend '{backend_name}' not registered."
-            )
-
-        return cls._backend_map[backend_name]
-
-    # -------------------------------------------------
-    # Introspection
-    # -------------------------------------------------
-
+    # -------------------------------
+    # Determinism helpers
+    # -------------------------------
     @classmethod
     def list_models(cls) -> list[str]:
-        return list(cls._model_map.keys())
-
-    @classmethod
-    def list_backends(cls) -> list[str]:
-        return list(cls._backend_map.keys())
-
-    # -------------------------------------------------
-    # Reset (for testing)
-    # -------------------------------------------------
+        return sorted(cls._models.keys())
 
     @classmethod
     def clear(cls) -> None:
-        cls._model_map.clear()
-        cls._backend_map.clear()
-
-    # -------------------------------------------------
-    # Representation
-    # -------------------------------------------------
-
-    def __repr__(self) -> str:
-        return (
-            f"<ModelRegistry "
-            f"models={len(self._model_map)} "
-            f"backends={len(self._backend_map)}>"
-        )
+        cls._models.clear()
+        cls._backends.clear()

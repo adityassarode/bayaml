@@ -1,122 +1,51 @@
-"""
-Baya Base Backend
-
-Defines the abstract interface for all ML backends.
-
-Every integration backend must inherit from BaseBackend
-and implement the required methods.
-"""
+# baya/integrations/base_backend.py
 
 from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
 
 
 class BaseBackend(ABC):
-    """
-    Abstract base class for ML backends.
+    """Abstract ML backend interface"""
 
-    All ML library integrations must implement this interface.
-    """
-
-    # -------------------------------------------------
-    # Required Properties
-    # -------------------------------------------------
+    # ---------------------------
+    # Identity
+    # ---------------------------
 
     @property
     @abstractmethod
     def name(self) -> str:
-        """
-        Backend name (e.g., 'sklearn', 'tensorflow').
-        """
-        pass
+        """Unique backend name"""
+        raise NotImplementedError
 
-    # -------------------------------------------------
-    # Model Lifecycle
-    # -------------------------------------------------
+    # ---------------------------
+    # Model lifecycle
+    # ---------------------------
 
     @abstractmethod
-    def create_model(self, model_type: str, **kwargs) -> Any:
-        """
-        Create model instance based on model_type.
-
-        Example:
-            model_type="random_forest"
-        """
-        pass
+    def create_model(self, model_name: str, **kwargs: Any) -> Any:
+        """Instantiate model (NOT train)"""
+        raise NotImplementedError
 
     @abstractmethod
-    def train(
-        self,
-        model: Any,
-        X_train: Any,
-        y_train: Any,
-        **kwargs,
-    ) -> Any:
-        """
-        Train model and return fitted model.
-        """
-        pass
+    def train(self, model: Any, X: Any, y: Any, **kwargs: Any) -> Any:
+        """Fit model"""
+        raise NotImplementedError
 
     @abstractmethod
-    def predict(
-        self,
-        model: Any,
-        X: Any,
-    ) -> Any:
-        """
-        Generate predictions.
-        """
-        pass
+    def predict(self, model: Any, X: Any) -> Any:
+        """Generate predictions"""
+        raise NotImplementedError
 
-    # -------------------------------------------------
-    # Optional Capabilities
-    # -------------------------------------------------
+    # ---------------------------
+    # Optional
+    # ---------------------------
 
-    def evaluate(
-        self,
-        model: Any,
-        X_test: Any,
-        y_test: Any,
-    ) -> Dict[str, Any]:
-        """
-        Optional backend-specific evaluation.
-        Default: empty metrics.
-        """
+    def evaluate(self, model: Any, X: Any, y: Any) -> Dict[str, Any]:
         return {}
 
-    def tune(
-        self,
-        model: Any,
-        X_train: Any,
-        y_train: Any,
-        param_grid: Optional[Dict[str, Any]] = None,
-    ) -> Any:
-        """
-        Optional hyperparameter tuning.
-        Default: return original model.
-        """
+    def tune(self, model: Any, X: Any, y: Any, param_grid: Optional[Dict[str, Any]] = None) -> Any:
         return model
-
-    # -------------------------------------------------
-    # Custom Training Loop
-    # -------------------------------------------------
-
-    def train_custom(
-        self,
-        training_function,
-        *args,
-        **kwargs,
-    ) -> Any:
-        """
-        Allow user to inject custom training loop.
-        """
-        return training_function(*args, **kwargs)
-
-    # -------------------------------------------------
-    # Representation
-    # -------------------------------------------------
 
     def __repr__(self) -> str:
         return f"<BayaBackend name={self.name}>"
