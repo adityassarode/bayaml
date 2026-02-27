@@ -49,3 +49,16 @@ def test_from_config_with_path_and_schema(tmp_path: Path):
     )
     from_schema = Project.from_config(schema)
     assert from_schema.target == "y"
+
+
+
+def test_from_config_with_yaml_path(tmp_path: Path):
+    data = _write_data(tmp_path)
+    cfg_path = tmp_path / "workflow.yaml"
+    cfg_path.write_text(
+        f"data_path: {data}\ntarget: y\nmodel: logistic_regression\ntask: classification\n",
+        encoding="utf-8",
+    )
+    project = Project.from_config(str(cfg_path))
+    metrics = project.run()
+    assert "accuracy" in metrics
