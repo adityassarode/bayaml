@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from typing import Any, Callable, Dict
@@ -6,10 +7,12 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.svm import SVC, SVR
 
+
 from .artifact_store import ArtifactStore
 from .dataset_registry import DatasetRegistry
 from .model_registry import RegistryModelStore
 from .versioning import Versioning
+
 
 ModelConstructor = Callable[..., Any]
 MODEL_REGISTRY: Dict[str, ModelConstructor] = {}
@@ -48,3 +51,6 @@ __all__ = [
     "ArtifactStore",
     "Versioning",
 ]
+
+__all__ = ["RegistryModelStore", "DatasetRegistry", "ArtifactStore", "Versioning"]
+

@@ -44,6 +44,16 @@ Documentation = "https://baya-ml.dev/docs"
 Repository = "https://github.com/adityasarode/baya"
 Issues = "https://github.com/adityasarode/baya/issues"
 
+
+
+
+
+# ================================
+# CLI Entry
+# ================================
+
+
+
 [project.scripts]
 baya = "baya.cli.main:main"
 

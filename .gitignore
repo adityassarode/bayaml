@@ -119,3 +119,5 @@ docs/_build/
 # CLI generated projects
 # =========================
 baya_project/
+
+baya_runs/

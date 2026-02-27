@@ -2,10 +2,18 @@
 
 from __future__ import annotations
 
+
 from .automl import baya
 from .project import Project
 from .registry import list_models, register_model
 from .simple import Baya, quick_train
+
+from .project import Project
+
+from .simple import Baya, quick_train
+
+
+
 from .version import __version__
 
 __author__ = "Aditya Sarode"
@@ -26,4 +34,11 @@ def info(open_website: bool = False) -> None:
         webbrowser.open(__website__)
 
 
+
 __all__ = ["Project", "Baya", "quick_train", "baya", "register_model", "list_models", "__version__", "info"]
+
+__all__ = ["Project", "Baya", "quick_train", "__version__", "info"]
+
+__all__ = ["Project", "__version__", "info"]
+
+

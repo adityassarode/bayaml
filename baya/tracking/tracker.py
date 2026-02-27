@@ -1,9 +1,20 @@
 from __future__ import annotations
 
+
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict
 import uuid
+
+
+from datetime import datetime, timezone
+
+from datetime import datetime
+
+from pathlib import Path
+from typing import Any, Dict
+import uuid
+
 
 from .storage import Storage
 
@@ -32,6 +43,14 @@ class Tracker:
                 "run_id": self.run_id,
                 "params": self._params,
                 "metrics": self._metrics,
+
                 "completed_at": datetime.now(timezone.utc).isoformat(),
+
+
+                "completed_at": datetime.now(timezone.utc).isoformat(),
+
+                "completed_at": datetime.utcnow().isoformat() + "Z",
+
+
             },
         )

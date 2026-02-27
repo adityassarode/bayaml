@@ -30,8 +30,10 @@ class ModelModule:
         self._ctx.set_model(trained, backend)
         self._ctx.mark_fitted()
 
+
         if self._ctx.is_split and self._ctx.get_predictions() is None:
             self.predict()
+
 
         return self
 

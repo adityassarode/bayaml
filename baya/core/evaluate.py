@@ -13,9 +13,13 @@ class EvaluateModule:
 
     def _y(self) -> tuple[Any, Any]:
         if self._ctx.get_predictions() is None:
+
             raise RuntimeError(
                 "No predictions found. Run project.model.predict() before evaluation."
             )
+
+            raise RuntimeError("Run prediction first.")
+
         _, _, _, y_test = self._ctx.get_split_data()
         return y_test, self._ctx.get_predictions()
 
