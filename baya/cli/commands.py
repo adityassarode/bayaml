@@ -1,10 +1,11 @@
 from __future__ import annotations
-from baya.context import Context
+
+from pathlib import Path
+
+from baya.project import Project
 
 
-def run_pipeline(context: Context) -> None:
-    context.pipeline.run()
-
-
-def show_models(context: Context) -> None:
-    print(context.registry.list_models())
+def run_from_config(path: Path) -> Project:
+    project = Project.from_config(path)
+    project.run()
+    return project

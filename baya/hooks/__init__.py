@@ -1,8 +1,4 @@
-"""
-Lifecycle Hooks System for Baya ML.
-"""
-
-from .manager import HookManager
 from .events import EventType
+from .manager import HookManager
 
-__all__ = ["HookManager", "EventType"]
+__all__ = ["EventType", "HookManager"]
