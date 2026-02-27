@@ -27,9 +27,14 @@ class ModelModule:
     # Create
     # =====================================================
 
-    def create(self, name: str, *, target: str) -> Any:
+    def create(self, name: str, *, target: str) -> "ModelModule":
 
         self._ctx.ensure_dataframe()
+
+        if not ModelRegistry.is_frozen():
+            raise RuntimeError(
+                "ModelRegistry must be frozen before model creation."
+            )
 
         current_target = self._ctx.get_target()
 
@@ -47,9 +52,11 @@ class ModelModule:
 
         model = backend.create_model(model_name)
 
-        self._ctx.set_model(model, backend)
+        if model is None:
+            raise RuntimeError("Backend failed to create model.")
 
         self._ctx.set_model(model, backend)
+
         return self
 
     # =====================================================
@@ -61,6 +68,9 @@ class ModelModule:
         if not self._ctx.is_split:
             raise RuntimeError("Dataset must be split before training.")
 
+        if self._ctx.is_fitted:
+            raise RuntimeError("Model already trained.")
+
         model = self._ctx.get_model()
         backend = self._ctx.get_backend()
 
@@ -69,16 +79,15 @@ class ModelModule:
 
         X_train, _, y_train, _ = self._ctx.get_split_data()
 
-        seed = self._ctx.get_seed()
-        if "seed" not in kwargs:
-            kwargs["seed"] = seed
-
         trained_model = backend.train(
             model=model,
             X_train=X_train,
             y_train=y_train,
-            **kwargs,
+            seed=self._ctx.get_seed(),
         )
+
+        if trained_model is None:
+            raise RuntimeError("Backend returned invalid trained model.")
 
         self._ctx.set_model(trained_model, backend)
         self._ctx.mark_fitted()
@@ -100,9 +109,8 @@ class ModelModule:
         if model is None or backend is None:
             raise RuntimeError("Model state invalid.")
 
-        # -------------------------------------------------
-        # Default: test set prediction
-        # -------------------------------------------------
+        scope = "test"
+
         if X is None:
             if not self._ctx.is_split:
                 raise RuntimeError("No split data available.")
@@ -110,30 +118,27 @@ class ModelModule:
             _, X_test, _, _ = self._ctx.get_split_data()
             X = X_test
 
-        # -------------------------------------------------
-        # External data: schema validation required
-        # -------------------------------------------------
         else:
-            reference_df = self._ctx.get_dataframe()
+            scope = "external"
 
-            if reference_df is None:
+            reference_df = self._ctx.get_dataframe()
+            target = self._ctx.get_target()
+
+            if reference_df is None or target is None:
                 raise RuntimeError("Reference dataset unavailable.")
 
-            # Validate strict schema match
             validate_schema(
-                reference=reference_df.drop(columns=[self._ctx.get_target()]),
+                reference=reference_df.drop(columns=[target]),
                 new=X,
             )
 
-        # -------------------------------------------------
-        # Backend inference (no model bypass)
-        # -------------------------------------------------
         preds = backend.predict(
             model=model,
             X=X,
         )
 
-        # Explicit overwrite (deterministic)
-        self._ctx.set_predictions(preds)
+        preds = np.asarray(preds)
+
+        self._ctx.set_predictions(preds, scope=scope)
 
         return preds

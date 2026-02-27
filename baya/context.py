@@ -11,8 +11,13 @@ class Context:
     """
     Central controlled state container.
 
-    All state mutation must go through explicit setters.
-    No module may directly mutate internal attributes.
+    Architectural guarantees:
+    - No mutation after execution lock
+    - No dataset mutation after split
+    - No seed mutation after split
+    - No target mutation after split
+    - No model rebinding after fit
+    - Deterministic state transitions
     """
 
     # =====================================================
@@ -71,6 +76,34 @@ class Context:
         # -------------------------
         self._workspace: Optional[Path] = workspace
 
+        # -------------------------
+        # Execution Lock
+        # -------------------------
+        self._locked: bool = False
+
+    # =====================================================
+    # Internal Guards
+    # =====================================================
+
+    def _ensure_mutable(self) -> None:
+        if self._locked:
+            raise RuntimeError("Context is locked. No further mutation allowed.")
+
+    # =====================================================
+    # Execution Lock
+    # =====================================================
+
+    def lock(self) -> None:
+        """
+        Locks the context permanently.
+        Called by Executor at training boundary.
+        """
+        self._locked = True
+
+    @property
+    def is_locked(self) -> bool:
+        return self._locked
+
     # =====================================================
     # Workspace
     # =====================================================
@@ -83,6 +116,9 @@ class Context:
     # =====================================================
 
     def set_seed(self, seed: int) -> None:
+        if self._is_split:
+            raise RuntimeError("Cannot change seed after dataset split.")
+        self._ensure_mutable()
         self._seed = seed
 
     def get_seed(self) -> int:
@@ -93,6 +129,9 @@ class Context:
     # =====================================================
 
     def set_dataframe(self, df: pd.DataFrame) -> None:
+        if self._is_split:
+            raise RuntimeError("Cannot change dataset after split.")
+        self._ensure_mutable()
         self._dataframe = df.copy()
         self.reset_split_state()
         self.reset_model_state()
@@ -111,8 +150,13 @@ class Context:
     def set_target(self, column: str) -> None:
         self.ensure_dataframe()
 
-        if column not in self._dataframe.columns:
+        if self._is_split:
+            raise RuntimeError("Cannot change target after split.")
+
+        if self._dataframe is None or column not in self._dataframe.columns:
             raise ValueError(f"Target column '{column}' not found.")
+
+        self._ensure_mutable()
 
         self._target = column
         self._infer_task_type()
@@ -155,9 +199,10 @@ class Context:
         y_train: Any,
         y_test: Any,
     ) -> None:
-
         if self._is_split:
             raise RuntimeError("Dataset already split.")
+
+        self._ensure_mutable()
 
         self._X_train = X_train
         self._X_test = X_test
@@ -165,7 +210,7 @@ class Context:
         self._y_test = y_test
         self._is_split = True
 
-        # Freeze feature schema for inference validation
+        # Freeze feature schema
         if hasattr(X_train, "columns"):
             self._feature_columns = list(X_train.columns)
 
@@ -179,6 +224,7 @@ class Context:
         return self._feature_columns
 
     def reset_split_state(self) -> None:
+        self._ensure_mutable()
         self._X_train = None
         self._X_test = None
         self._y_train = None
@@ -195,6 +241,9 @@ class Context:
     # =====================================================
 
     def set_model(self, model: Any, backend: BaseBackend) -> None:
+        if self._is_fitted:
+            raise RuntimeError("Cannot rebind model after training.")
+        self._ensure_mutable()
         self._model = model
         self._backend = backend
         self._is_fitted = False
@@ -217,6 +266,7 @@ class Context:
     # =====================================================
 
     def set_predictions(self, preds: Any, *, scope: str = "test") -> None:
+        self._ensure_mutable()
         self._predictions = preds
         self._prediction_scope = scope
 
@@ -231,6 +281,7 @@ class Context:
     # =====================================================
 
     def set_metrics(self, metrics: Dict[str, Any]) -> None:
+        self._ensure_mutable()
         self._metrics = metrics
 
     def get_metrics(self) -> Dict[str, Any]:
@@ -241,6 +292,7 @@ class Context:
     # =====================================================
 
     def reset_model_state(self) -> None:
+        self._ensure_mutable()
         self._model = None
         self._backend = None
         self._predictions = None

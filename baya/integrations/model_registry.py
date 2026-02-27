@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Any
+import hashlib
+import json
+import os
 
 from .base_backend import BaseBackend
 
@@ -9,13 +12,12 @@ class ModelRegistry:
     """
     Central deterministic model registry.
 
-    Rules:
+    Guarantees:
+    - Explicit registration
     - No auto-registration
-    - No import-time side effects
-    - Explicit backend registration
-    - Explicit model registration
     - Explicit freeze
-    - Deterministic resolution
+    - Deterministic snapshot
+    - Reproducibility-safe hashing
     """
 
     _model_map: Dict[str, str] = {}
@@ -31,12 +33,12 @@ class ModelRegistry:
         if cls._is_frozen:
             raise RuntimeError("Registry is frozen. Cannot register backends.")
 
-        backend_name: str = backend.name
+        name = backend.name
 
-        if backend_name in cls._backend_map:
-            raise ValueError(f"Backend '{backend_name}' already registered.")
+        if name in cls._backend_map:
+            raise ValueError(f"Backend '{name}' already registered.")
 
-        cls._backend_map[backend_name] = backend
+        cls._backend_map[name] = backend
 
     # =====================================================
     # Model Registration
@@ -76,40 +78,62 @@ class ModelRegistry:
         if backend_name not in cls._backend_map:
             raise RuntimeError(f"Backend '{backend_name}' not registered.")
 
-        backend = cls._backend_map[backend_name]
-
-        return backend, model_name
+        return cls._backend_map[backend_name], model_name
 
     # =====================================================
-    # Explicit Freeze
+    # Freeze
     # =====================================================
 
     @classmethod
     def freeze(cls) -> None:
+        if cls._is_frozen:
+            return
+
+        if not cls._backend_map:
+            raise RuntimeError("Cannot freeze empty registry.")
+
         cls._is_frozen = True
 
+    @classmethod
+    def is_frozen(cls) -> bool:
+        return cls._is_frozen
+
     # =====================================================
-    # Introspection
+    # Snapshot / Hash (Reproducibility Safe)
     # =====================================================
 
     @classmethod
-    def list_models(cls) -> List[str]:
-        return sorted(cls._model_map.keys())
+    def snapshot(cls) -> Dict[str, Any]:
+        return {
+            "models": sorted(cls._model_map.keys()),
+            "backends": sorted(cls._backend_map.keys()),
+            "backend_versions": {
+                name: getattr(cls._backend_map[name], "version", "unknown")
+                for name in sorted(cls._backend_map.keys())
+            },
+        }
 
     @classmethod
-    def list_backends(cls) -> List[str]:
-        return sorted(cls._backend_map.keys())
+    def registry_hash(cls) -> str:
+        if not cls._is_frozen:
+            raise RuntimeError("Registry must be frozen before computing hash.")
+
+        encoded = json.dumps(
+            cls.snapshot(),
+            sort_keys=True,
+        ).encode("utf-8")
+
+        return hashlib.sha256(encoded).hexdigest()
 
     # =====================================================
-    # Testing Reset (Controlled)
+    # Test Reset (Protected)
     # =====================================================
 
     @classmethod
     def clear(cls) -> None:
-        """
-        Deterministic registry reset.
-        Test-only use.
-        """
+        if not os.environ.get("BAYA_TEST_MODE"):
+            raise RuntimeError("Registry.clear() allowed only in test mode.")
+
         cls._model_map.clear()
         cls._backend_map.clear()
         cls._is_frozen = False

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, List
 
 
 class BaseBackend(ABC):
@@ -15,6 +15,7 @@ class BaseBackend(ABC):
     - Must operate only on provided data.
     - Must respect seed for deterministic behavior.
     - Must encapsulate framework-specific behavior.
+    - Must not retain model references internally.
     """
 
     # =====================================================
@@ -27,8 +28,19 @@ class BaseBackend(ABC):
         """Unique backend identifier."""
         ...
 
+    @property
+    @abstractmethod
+    def version(self) -> str:
+        """
+        Backend implementation version.
+
+        Required for reproducibility and registry hashing.
+        Must be stable.
+        """
+        ...
+
     # =====================================================
-    # Capability Declaration (Required)
+    # Capability Declaration
     # =====================================================
 
     @abstractmethod
@@ -53,7 +65,11 @@ class BaseBackend(ABC):
         model_type: str,
         **kwargs: Any,
     ) -> Any:
-        """Instantiate model object."""
+        """
+        Instantiate model object.
+
+        Must not mutate global state.
+        """
         ...
 
     @abstractmethod
@@ -63,17 +79,18 @@ class BaseBackend(ABC):
         X_train: Any,
         y_train: Any,
         *,
-        seed: Optional[int] = None,
+        seed: int,
         **kwargs: Any,
     ) -> Any:
         """
         Train model deterministically.
 
         Requirements:
-        - Respect seed if provided
-        - Must NOT mutate global RNG
-        - Must NOT access Context
-        - Must return trained model
+        - Must respect provided seed.
+        - Must NOT mutate global RNG.
+        - Must NOT access Context.
+        - Must NOT store model internally.
+        - Must return trained model.
         """
         ...
 
@@ -89,6 +106,7 @@ class BaseBackend(ABC):
         Must:
         - Not mutate model
         - Not access Context
+        - Be deterministic given identical inputs
         """
         ...
 
@@ -119,31 +137,8 @@ class BaseBackend(ABC):
         )
 
     # =====================================================
-    # Optional Extensions
-    # =====================================================
-
-    def evaluate(
-        self,
-        model: Any,
-        X_test: Any,
-        y_test: Any,
-    ) -> Dict[str, Any]:
-        return {}
-
-    def tune(
-        self,
-        model: Any,
-        X_train: Any,
-        y_train: Any,
-        param_grid: Optional[Dict[str, Any]] = None,
-        *,
-        seed: Optional[int] = None,
-    ) -> Any:
-        return model
-
-    # =====================================================
     # Representation
     # =====================================================
 
     def __repr__(self) -> str:
-        return f"<BayaBackend name={self.name}>"
+        return f"<BayaBackend name={self.name} version={self.version}>"
