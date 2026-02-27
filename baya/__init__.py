@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from .project import Project
+
 from .simple import Baya, quick_train
+
+
 from .version import __version__
 
 __author__ = "Aditya Sarode"
@@ -24,4 +27,8 @@ def info(open_website: bool = False) -> None:
         webbrowser.open(__website__)
 
 
+
 __all__ = ["Project", "Baya", "quick_train", "__version__", "info"]
+
+__all__ = ["Project", "__version__", "info"]
+

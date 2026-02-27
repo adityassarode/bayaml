@@ -2,6 +2,7 @@
 
 Structured, production-ready ML orchestration framework.
 
+
 ## Installation
 
 ```bash
@@ -9,6 +10,24 @@ pip install baya
 ```
 
 ## Simple API (one call)
+
+## Highlights
+
+- Unified `Project` API
+- Deterministic context/state lifecycle
+- DAG-based pipeline orchestration
+- Working sklearn backend + model registry
+- Built-in metrics, tracking, export, hooks, and CLI
+- Minimal extension-ready subsystems for deployment, plugins, governance, security, optimization, monitoring
+
+## Installation
+
+```bash
+pip install -e .
+```
+
+## Quickstart
+
 
 ```python
 from baya import quick_train
@@ -51,6 +70,19 @@ print(metrics)
 - dictionary config
 - internal `ConfigSchema`
 
+
+p = by.Project("data.csv", target="label", seed=42)
+p.clean.fill_missing("feature1", "median")
+p.split.train_test(test_size=0.2)
+p.model.create("random_forest_classifier", n_estimators=100)
+p.model.train()
+p.model.predict()
+metrics = p.evaluate.classification()
+p.tracker.log_metrics(metrics)
+p.tracker.finalize()
+```
+
+
 ## CLI
 
 ```bash
@@ -65,8 +97,15 @@ baya info
 ```python
 import baya
 
+
+
 baya.info()                  # metadata only
 baya.info(open_website=True) # optional website open
 ```
 
-No branding is printed on import.
+
+## Website
+
+- https://baya-ml.dev
+- Buy Me a Coffee: https://buymeacoffee.com/adityasarode
+
