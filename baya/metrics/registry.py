@@ -1,42 +1,32 @@
 from __future__ import annotations
-import numpy as np
 
+from typing import Any, Callable, Dict
 
-def _validate(y_true, y_pred):
-    y_true = np.asarray(y_true)
-    y_pred = np.asarray(y_pred)
+from .classification import accuracy, f1, precision, recall
+from .regression import mae, mse, r2
 
-    if y_true.shape != y_pred.shape:
-        raise ValueError("Shape mismatch in classification metrics")
+MetricFn = Callable[[Any, Any], float]
 
-    return y_true, y_pred
-
-
-def accuracy(y_true, y_pred) -> float:
-    y_true, y_pred = _validate(y_true, y_pred)
-    return float(np.mean(y_true == y_pred))
-
-
-def precision(y_true, y_pred) -> float:
-    y_true, y_pred = _validate(y_true, y_pred)
-    tp = np.sum((y_true == 1) & (y_pred == 1))
-    fp = np.sum((y_true == 0) & (y_pred == 1))
-    if tp + fp == 0:
-        return 0.0
-    return float(tp / (tp + fp))
-
-
-def recall(y_true, y_pred) -> float:
-    y_true, y_pred = _validate(y_true, y_pred)
-    tp = np.sum((y_true == 1) & (y_pred == 1))
-    fn = np.sum((y_true == 1) & (y_pred == 0))
-    if tp + fn == 0:
-        return 0.0
-    return float(tp / (tp + fn))
-
-
-METRICS = {
+_METRICS: Dict[str, MetricFn] = {
     "accuracy": accuracy,
     "precision": precision,
     "recall": recall,
+    "f1": f1,
+    "mae": mae,
+    "mse": mse,
+    "r2": r2,
 }
+
+
+def list_metrics() -> list[str]:
+    return sorted(_METRICS)
+
+
+def get_metric(name: str) -> MetricFn:
+    if name not in _METRICS:
+        raise KeyError(name)
+    return _METRICS[name]
+
+
+def evaluate_predictions(y_true: Any, y_pred: Any, names: list[str]) -> Dict[str, float]:
+    return {name: float(get_metric(name)(y_true, y_pred)) for name in names}
