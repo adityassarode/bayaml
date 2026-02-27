@@ -1,29 +1,10 @@
-"""
-Baya Core Modules
-
-This package contains the primary data science operations:
-
-- Data loading & inspection
-- Cleaning
-- Encoding
-- Scaling
-- Splitting
-- Modeling
-- Evaluation
-- Transformations
-
-Core modules operate on the shared Context object.
-"""
-
-from __future__ import annotations
-
-from .data import DataModule
 from .clean import CleanModule
+from .data import DataModule
 from .encode import EncodeModule
+from .evaluate import EvaluateModule
+from .model import ModelModule
 from .scale import ScaleModule
 from .split import SplitModule
-from .model import ModelModule
-from .evaluate import EvaluateModule
 from .transform import TransformModule
 
 __all__ = [

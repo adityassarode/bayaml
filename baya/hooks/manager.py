@@ -1,59 +1,23 @@
 from __future__ import annotations
 
-from typing import Callable, Dict, List, Any
+from collections import defaultdict
+from typing import Any, Callable, DefaultDict, Dict, List
 
 from .events import EventType
 
 
-HookCallback = Callable[..., None]
-
-
 class HookManager:
-    """
-    Manages lifecycle hook subscriptions.
+    _hooks: DefaultDict[EventType, List[Callable[[Dict[str, Any]], None]]] = defaultdict(list)
 
-    Must be attached to Context.
-    No global singleton allowed.
-    """
+    @classmethod
+    def register(cls, event: EventType, callback: Callable[[Dict[str, Any]], None]) -> None:
+        cls._hooks[event].append(callback)
 
-    def __init__(self) -> None:
-        self._hooks: Dict[EventType, List[HookCallback]] = {}
+    @classmethod
+    def emit(cls, event: EventType, payload: Dict[str, Any]) -> None:
+        for callback in list(cls._hooks[event]):
+            callback(payload)
 
-    # -------------------------------------------------
-    # Registration
-    # -------------------------------------------------
-
-    def register(
-        self,
-        event: EventType,
-        callback: HookCallback,
-    ) -> None:
-        if event not in self._hooks:
-            self._hooks[event] = []
-
-        self._hooks[event].append(callback)
-
-    # -------------------------------------------------
-    # Emission
-    # -------------------------------------------------
-
-    def emit(
-        self,
-        event: EventType,
-        **payload: Any,
-    ) -> None:
-
-        callbacks = self._hooks.get(event, [])
-
-        for cb in callbacks:
-            cb(**payload)
-
-    # -------------------------------------------------
-    # Introspection
-    # -------------------------------------------------
-
-    def list_hooks(self) -> Dict[EventType, int]:
-        return {
-            event: len(callbacks)
-            for event, callbacks in self._hooks.items()
-        }
+    @classmethod
+    def clear(cls) -> None:
+        cls._hooks.clear()
