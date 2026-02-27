@@ -1,16 +1,14 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Literal
 
 
-TaskType = Literal["classification", "regression"]
-
-
 @dataclass(frozen=True)
 class ConfigSchema:
-    dataset_path: str
+    data_path: str
     target: str
-    task: TaskType
-    metric: str
-    seed: int
-    test_size: float
+    model: str
+    task: Literal["classification", "regression"] = "classification"
+    test_size: float = 0.2
+    seed: int = 42

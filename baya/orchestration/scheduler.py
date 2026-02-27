@@ -1,6 +1,5 @@
 class Scheduler:
-    """
-    Placeholder for future parallel execution.
-    Keep isolated from backend logic.
-    """
-    pass
+    """Minimal serial scheduler placeholder for future parallel execution."""
+
+    def schedule(self, steps):
+        return list(steps)

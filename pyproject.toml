@@ -98,10 +98,10 @@ dev = [
 # ================================
 
 [project.urls]
-Homepage = "https://github.com/yourusername/baya"
-Documentation = "https://github.com/yourusername/baya/docs"
-Repository = "https://github.com/yourusername/baya"
-Issues = "https://github.com/yourusername/baya/issues"
+Homepage = "https://baya-ml.dev"
+Documentation = "https://baya-ml.dev/docs"
+Repository = "https://github.com/adityasarode/baya"
+Issues = "https://github.com/adityasarode/baya/issues"
 
 
 # ================================

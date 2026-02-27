@@ -1,25 +1,62 @@
 from __future__ import annotations
 
 import argparse
+import webbrowser
 from pathlib import Path
 
-from baya.config import load_config, validate_config
-from baya.context import Context
-from baya.orchestration.pipeline import Pipeline
+from baya import __author__, __version__, info
+from baya.cli.commands import run_from_config
+from baya.integrations import bootstrap_integrations
+from baya.integrations.model_registry import ModelRegistry
 
 
-def app() -> None:
-    parser = argparse.ArgumentParser(prog="baya")
-    parser.add_argument("config", type=str, help="Path to config file")
+def banner() -> str:
+    return (
+        "Baya ML Framework\n"
+        f"Version : {__version__}\n"
+        f"Author  : {__author__}\n"
+        "Website : https://baya-ml.dev"
+    )
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(prog="baya", description="Baya production-grade ML framework")
+    parser.add_argument("--banner", action="store_true", help="Print framework banner")
+
+    sub = parser.add_subparsers(dest="command")
+
+    run_cmd = sub.add_parser("run", help="Run training/evaluation from config")
+    run_cmd.add_argument("config", type=str)
+
+    reg_cmd = sub.add_parser("registry", help="Registry operations")
+    reg_cmd.add_argument("action", choices=["list-models", "list-backends"])
+
+    info_cmd = sub.add_parser("info", help="Show framework metadata")
+    info_cmd.add_argument("--open-website", action="store_true")
 
     args = parser.parse_args()
 
-    config_path = Path(args.config)
+    if args.banner:
+        print(banner())
 
-    raw = load_config(config_path)
-    validated = validate_config(raw)
+    if args.command == "run":
+        project = run_from_config(Path(args.config))
+        print(f"Run completed. Tracker run_id={project.tracker.run_id}")
+        return
 
-    context = Context(config=validated)
+    if args.command == "registry":
+        bootstrap_integrations()
+        if args.action == "list-models":
+            print("\n".join(ModelRegistry.list_models()))
+        else:
+            print("\n".join(ModelRegistry.list_backends()))
+        return
 
-    pipeline = Pipeline(context)
-    pipeline.run()
+    if args.command == "info":
+        info(open_website=bool(args.open_website))
+        if args.open_website:
+            webbrowser.open("https://baya-ml.dev")
+        return
+
+    if args.command is None:
+        parser.print_help()

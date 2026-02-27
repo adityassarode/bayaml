@@ -1,19 +1,8 @@
-from dataclasses import dataclass
+from __future__ import annotations
+
 import numpy as np
 
 
-@dataclass(frozen=True)
-class PredictionDistribution:
-    mean: float
-    std: float
-    min: float
-    max: float
-
-
-def summarize(preds: np.ndarray) -> PredictionDistribution:
-    return PredictionDistribution(
-        mean=float(np.mean(preds)),
-        std=float(np.std(preds)),
-        min=float(np.min(preds)),
-        max=float(np.max(preds)),
-    )
+def summarize_distribution(preds) -> dict:
+    arr = np.asarray(preds)
+    return {"mean": float(arr.mean()), "std": float(arr.std())}
