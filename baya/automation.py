@@ -33,19 +33,28 @@ def hash_dataframe(df: pd.DataFrame) -> str:
     return hashlib.sha256(hashed.tobytes()).hexdigest()
 
 
-
-
 class IntentParser:
     _URL = re.compile(r"(https?://\S+\.csv)", re.IGNORECASE)
     _PATH = re.compile(r"(?:use\s+)?([\w./-]+\.(?:csv|xlsx))", re.IGNORECASE)
     _MATRIX = re.compile(r"(\[\s*\[.*\]\s*\])", re.DOTALL)
-    _FILL = re.compile(r"fill\s+([a-zA-Z_][\w]*)\s+with\s+([\w\.-]+)", re.IGNORECASE)
-    _HIST = re.compile(r"plot\s+histogram\s+of\s+([a-zA-Z_][\w]*)", re.IGNORECASE)
-    _SCATTER = re.compile(r"scatter\s+([a-zA-Z_][\w]*)\s+vs\s+([a-zA-Z_][\w]*)", re.IGNORECASE)
-    _EXPORT = re.compile(r"(?:export|save)\s+([\w./-]+\.(?:pdf|csv|json|xlsx|onnx))", re.IGNORECASE)
+    _FILL = re.compile(
+        r"fill\s+([a-zA-Z_][\w]*)\s+with\s+([\w\.-]+)",
+        re.IGNORECASE,
+    )
+    _HIST = re.compile(
+        r"plot\s+histogram\s+of\s+([a-zA-Z_][\w]*)",
+        re.IGNORECASE,
+    )
+    _SCATTER = re.compile(
+        r"scatter\s+([a-zA-Z_][\w]*)\s+vs\s+([a-zA-Z_][\w]*)",
+        re.IGNORECASE,
+    )
+    _EXPORT = re.compile(
+        r"(?:export|save)\s+([\w./-]+\.(?:pdf|csv|json|xlsx|onnx))",
+        re.IGNORECASE,
+    )
 
     def parse(self, instruction: str) -> dict[str, Any]:
-
         text = " ".join(instruction.strip().split())
         lower = text.lower()
 
@@ -64,18 +73,19 @@ class IntentParser:
 
         if matrix_raw:
             intents.append(
-                PlanStep(
-                    "load_matrix",
-                    {"matrix_raw": matrix_raw},
-                )
+                PlanStep("load_matrix", {"matrix_raw": matrix_raw})
             )
         elif dataset_url:
-            intents.append(PlanStep("load_dataset", {"source": dataset_url}))
+            intents.append(
+                PlanStep("load_dataset", {"source": dataset_url})
+            )
         elif dataset_path:
-            intents.append(PlanStep("load_dataset", {"source": dataset_path}))
+            intents.append(
+                PlanStep("load_dataset", {"source": dataset_path})
+            )
 
         # -------------------------
-        # Target Detection (FIXED)
+        # Target Detection
         # -------------------------
         target_match = re.search(
             r"treat\s+([a-zA-Z_][\w]*)\s+as\s+target",
@@ -84,7 +94,10 @@ class IntentParser:
         )
         if target_match:
             intents.append(
-                PlanStep("set_target", {"target": target_match.group(1)})
+                PlanStep(
+                    "set_target",
+                    {"target": target_match.group(1)},
+                )
             )
 
         # -------------------------
@@ -98,7 +111,10 @@ class IntentParser:
 
         for col, value in self._FILL.findall(text):
             intents.append(
-                PlanStep("clean_fill", {"column": col, "value": value})
+                PlanStep(
+                    "clean_fill",
+                    {"column": col, "value": value},
+                )
             )
 
         # -------------------------
@@ -117,7 +133,10 @@ class IntentParser:
         task = None
         if "train classification model" in lower:
             task = "classification"
-        elif "train regression model" in lower or "train regression" in lower:
+        elif (
+            "train regression model" in lower
+            or "train regression" in lower
+        ):
             task = "regression"
 
         model_name = None
@@ -138,41 +157,109 @@ class IntentParser:
         # Evaluation + Plots
         # -------------------------
         if "show confusion matrix" in lower:
-            intents.append(PlanStep("plot_confusion_matrix", {}))
+            intents.append(
+                PlanStep("plot_confusion_matrix", {})
+            )
 
         for col in self._HIST.findall(text):
             intents.append(
-                PlanStep("plot_histogram", {"column": col})
+                PlanStep(
+                    "plot_histogram",
+                    {"column": col},
+                )
             )
 
         for x, y in self._SCATTER.findall(text):
             intents.append(
-                PlanStep("plot_scatter", {"x": x, "y": y})
+                PlanStep(
+                    "plot_scatter",
+                    {"x": x, "y": y},
+                )
+            )
+
+        # -------------------------
+        # Evaluate Mode Detection
+        # -------------------------
+        if "evaluate model pretty" in lower:
+            intents.append(
+                PlanStep("evaluate", {"mode": "pretty"})
+            )
+        elif "evaluate model original" in lower:
+            intents.append(
+                PlanStep("evaluate", {"mode": "original"})
+            )
+        elif "evaluate model sklearn" in lower:
+            intents.append(
+                PlanStep("evaluate", {"mode": "sklearn"})
+            )
+        elif "evaluate model pandas" in lower:
+            intents.append(
+                PlanStep("evaluate", {"mode": "pandas"})
+            )
+        elif "evaluate model numpy" in lower:
+            intents.append(
+                PlanStep("evaluate", {"mode": "numpy"})
+            )
+        elif "evaluate model json" in lower:
+            intents.append(
+                PlanStep("evaluate", {"mode": "json"})
+            )
+        elif "evaluate model table" in lower:
+            intents.append(
+                PlanStep("evaluate", {"mode": "table"})
+            )
+        elif "evaluate model markdown" in lower:
+            intents.append(
+                PlanStep("evaluate", {"mode": "markdown"})
+            )
+        elif "evaluate model latex" in lower:
+            intents.append(
+                PlanStep("evaluate", {"mode": "latex"})
+            )
+        elif "evaluate model diagnostic" in lower:
+            intents.append(
+                PlanStep("evaluate", {"mode": "diagnostic"})
             )
 
         # -------------------------
         # Export
         # -------------------------
         if export_path:
-            intents.append(PlanStep("export", {"path": export_path}))
+            intents.append(
+                PlanStep("export", {"path": export_path})
+            )
 
         # -------------------------
         # Deploy
         # -------------------------
         if "deploy in c++" in lower:
             intents.append(
-                PlanStep("deploy", {"mode": "onnx", "output": "model.onnx"})
+                PlanStep(
+                    "deploy",
+                    {"mode": "onnx", "output": "model.onnx"},
+                )
             )
-        elif "deploy as rest" in lower or "deploy model" in lower:
+        elif (
+            "deploy as rest" in lower
+            or "deploy model" in lower
+        ):
             intents.append(
-                PlanStep("deploy", {"mode": "rest", "output": "deployment_bundle"})
+                PlanStep(
+                    "deploy",
+                    {
+                        "mode": "rest",
+                        "output": "deployment_bundle",
+                    },
+                )
             )
 
         # -------------------------
-        # Set Task (last)
+        # Set Task
         # -------------------------
         if task:
-            intents.append(PlanStep("set_task", {"task": task}))
+            intents.append(
+                PlanStep("set_task", {"task": task})
+            )
 
         return {
             "steps": intents,
@@ -181,31 +268,65 @@ class IntentParser:
         }
 
     @staticmethod
-    def _search(pattern: re.Pattern[str], text: str) -> str | None:
+    def _search(
+        pattern: re.Pattern[str],
+        text: str,
+    ) -> str | None:
         match = pattern.search(text)
         return match.group(1) if match else None
+
 
 class PlanValidator:
     def validate(self, plan: ExecutionPlan) -> None:
         names = [s.name for s in plan.steps]
 
-        if "train" in names and not any(n in names for n in ["load_dataset", "load_matrix", "use_existing_data"]):
-            raise ValueError("Dataset must exist before training.")
+        if (
+            "train" in names
+            and not any(
+                n in names
+                for n in [
+                    "load_dataset",
+                    "load_matrix",
+                    "use_existing_data",
+                ]
+            )
+        ):
+            raise ValueError(
+                "Dataset must exist before training."
+            )
 
         if names.count("split") > 1:
             raise ValueError("No double split allowed.")
 
         if "train" in names and "split" not in names:
-            raise ValueError("Split must run before training.")
+            raise ValueError(
+                "Split must run before training."
+            )
 
-        if "evaluate" in names and "train" in names and names.index("evaluate") < names.index("train"):
+        if (
+            "evaluate" in names
+            and "train" in names
+            and names.index("evaluate")
+            < names.index("train")
+        ):
             raise ValueError("Train before evaluate.")
 
-        if "plot_confusion_matrix" in names and "evaluate" in names and names.index("plot_confusion_matrix") < names.index("evaluate"):
-            raise ValueError("Evaluate before confusion matrix.")
+        if (
+            "plot_confusion_matrix" in names
+            and "evaluate" in names
+            and names.index("plot_confusion_matrix")
+            < names.index("evaluate")
+        ):
+            raise ValueError(
+                "Evaluate before confusion matrix."
+            )
 
-        if "train" in names and "set_target" not in names and "set_target_last_column" not in names:
-            # target may already exist in Project state and will be checked at execution time
+        if (
+            "train" in names
+            and "set_target" not in names
+            and "set_target_last_column"
+            not in names
+        ):
             pass
 
 
@@ -213,18 +334,37 @@ def parse_matrix(matrix_raw: str) -> pd.DataFrame:
     try:
         payload = ast.literal_eval(matrix_raw)
     except (SyntaxError, ValueError) as exc:
-        raise ValueError("Invalid matrix literal.") from exc
+        raise ValueError(
+            "Invalid matrix literal."
+        ) from exc
 
-    if not isinstance(payload, list) or not payload or not all(isinstance(row, list) for row in payload):
-        raise ValueError("Matrix must be a list of lists.")
+    if (
+        not isinstance(payload, list)
+        or not payload
+        or not all(
+            isinstance(row, list)
+            for row in payload
+        )
+    ):
+        raise ValueError(
+            "Matrix must be a list of lists."
+        )
 
     width = len(payload[0])
+
     for row in payload:
         if len(row) != width:
-            raise ValueError("Matrix rows must have equal length.")
+            raise ValueError(
+                "Matrix rows must have equal length."
+            )
         for value in row:
-            if not isinstance(value, (int, float, np.integer, np.floating)):
-                raise ValueError("Matrix values must be numeric.")
+            if not isinstance(
+                value,
+                (int, float, np.integer, np.floating),
+            ):
+                raise ValueError(
+                    "Matrix values must be numeric."
+                )
 
     columns = [f"col_{i}" for i in range(width)]
     return pd.DataFrame(payload, columns=columns)
@@ -238,113 +378,201 @@ class ExecutionEngine:
         self.model_name: str | None = None
         self.task: str | None = None
 
-    def execute(self, plan: ExecutionPlan) -> dict[str, Any]:
+    def execute(
+        self,
+        plan: ExecutionPlan,
+    ) -> dict[str, Any]:
         allowed_calls = {
             "use_existing_data": self._use_existing_data,
             "load_dataset": self._load_dataset,
             "load_matrix": self._load_matrix,
             "set_target": self._set_target,
-            "set_target_last_column": self._set_target_last_column,
-            "clean_drop_nulls": self._clean_drop_nulls,
-            "clean_drop_duplicates": self._clean_drop_duplicates,
+            "set_target_last_column":
+                self._set_target_last_column,
+            "clean_drop_nulls":
+                self._clean_drop_nulls,
+            "clean_drop_duplicates":
+                self._clean_drop_duplicates,
             "clean_fill": self._clean_fill,
             "split": self._split,
             "train": self._train,
             "evaluate": self._evaluate,
-            "plot_confusion_matrix": self._plot_confusion_matrix,
-            "plot_histogram": self._plot_histogram,
-            "plot_scatter": self._plot_scatter,
+            "plot_confusion_matrix":
+                self._plot_confusion_matrix,
+            "plot_histogram":
+                self._plot_histogram,
+            "plot_scatter":
+                self._plot_scatter,
             "export": self._export,
             "deploy": self._deploy,
-            "encode_one_hot": self._encode_one_hot,
+            "encode_one_hot":
+                self._encode_one_hot,
             "set_task": self._set_task,
         }
 
         for step in plan.steps:
             handler = allowed_calls.get(step.name)
             if handler is None:
-                raise ValueError(f"Unsupported step: {step.name}")
+                raise ValueError(
+                    f"Unsupported step: {step.name}"
+                )
             handler(step.params)
 
         return {
-            "steps_executed": [s.name for s in plan.steps],
+            "steps_executed":
+                [s.name for s in plan.steps],
             "model_used": self.model_name,
-            "exports_generated": self.exports,
-            "deployment_status": self.deployments,
+            "exports_generated":
+                self.exports,
+            "deployment_status":
+                self.deployments,
             "plan_hash": plan.plan_hash,
         }
 
-    def _use_existing_data(self, _: dict[str, Any]) -> None:
+    def _use_existing_data(
+        self,
+        _: dict[str, Any],
+    ) -> None:
         self.project.context.ensure_dataframe()
 
-    def _load_dataset(self, params: dict[str, Any]) -> None:
+    def _load_dataset(
+        self,
+        params: dict[str, Any],
+    ) -> None:
         self.project.data.load(params["source"])
 
-    def _load_matrix(self, params: dict[str, Any]) -> None:
-        df = parse_matrix(params["matrix_raw"])
+    def _load_matrix(
+        self,
+        params: dict[str, Any],
+    ) -> None:
+        df = parse_matrix(
+            params["matrix_raw"]
+        )
         self.project.data.load(df)
         if params.get("last_column_target"):
-            self.project.context.set_target(df.columns[-1])
+            self.project.context.set_target(
+                df.columns[-1]
+            )
 
-    def _set_target(self, params: dict[str, Any]) -> None:
-        self.project.context.set_target(params["target"])
+    def _set_target(
+        self,
+        params: dict[str, Any],
+    ) -> None:
+        self.project.context.set_target(
+            params["target"]
+        )
 
-    def _set_target_last_column(self, _: dict[str, Any]) -> None:
+    def _set_target_last_column(
+        self,
+        _: dict[str, Any],
+    ) -> None:
         df = self.project.context.ensure_dataframe()
-        self.project.context.set_target(df.columns[-1])
+        self.project.context.set_target(
+            df.columns[-1]
+        )
 
-    def _clean_drop_nulls(self, _: dict[str, Any]) -> None:
+    def _clean_drop_nulls(
+        self,
+        _: dict[str, Any],
+    ) -> None:
         self.project.clean.drop_nulls()
 
-    def _clean_drop_duplicates(self, _: dict[str, Any]) -> None:
+    def _clean_drop_duplicates(
+        self,
+        _: dict[str, Any],
+    ) -> None:
         self.project.clean.drop_duplicates()
 
-    def _clean_fill(self, params: dict[str, Any]) -> None:
+    def _clean_fill(
+        self,
+        params: dict[str, Any],
+    ) -> None:
         column = params["column"]
         raw = params["value"]
+
         if raw in {"mean", "median", "mode"}:
-            self.project.clean.fill_missing(column, raw)
+            self.project.clean.fill_missing(
+                column,
+                raw,
+            )
             return
+
         try:
             casted: Any = float(raw)
             if casted.is_integer():
                 casted = int(casted)
         except ValueError:
             casted = raw
-        self.project.clean.fill_missing(column, casted)
 
-    def _split(self, _: dict[str, Any]) -> None:
-        self.project.split.train_test(test_size=0.2)
+        self.project.clean.fill_missing(
+            column,
+            casted,
+        )
 
-    def _train(self, params: dict[str, Any]) -> None:
+    def _split(
+        self,
+        _: dict[str, Any],
+    ) -> None:
+        self.project.split.train_test(
+            test_size=0.2
+        )
+
+    def _train(
+        self,
+        params: dict[str, Any],
+    ) -> None:
         self.model_name = params["model_name"]
 
-        self.project.model.create(self.model_name)
+        self.project.model.create(
+            self.model_name
+        )
         self.project.model.train()
 
-
-        # ---- SAFETY: auto encode if categorical still present ----
         df = self.project.context.ensure_dataframe()
         target = self.project.context.get_target()
 
-        feature_cols = [c for c in df.columns if c != target]
-        categorical = df[feature_cols].select_dtypes(include=["object", "category"]).columns
+        feature_cols = [
+            c for c in df.columns
+            if c != target
+        ]
+
+        categorical = df[feature_cols].select_dtypes(
+            include=["object", "category"]
+        ).columns
 
         if len(categorical) > 0:
-            df = pd.get_dummies(df, columns=categorical, drop_first=False)
+            df = pd.get_dummies(
+                df,
+                columns=categorical,
+                drop_first=False,
+            )
             self.project.data.load(df)
             self.project.context.set_target(target)
 
-        # ---- Now safe to train ----
-        self.project.model.create(self.model_name)
+        self.project.model.create(
+            self.model_name
+        )
         self.project.model.train()
 
-    def _evaluate(self, _: dict[str, Any]) -> None:
-        task = self.task or self.project.context.get_task_type()
+    def _evaluate(
+        self,
+        params: dict[str, Any],
+    ) -> None:
+        task = (
+            self.task
+            or self.project.context.get_task_type()
+        )
+
+        mode = params.get("mode", "full")
+
         if task == "classification":
-            self.project.evaluate.classification()
+            self.project.evaluate.classification(
+                mode=mode
+            )
         else:
-            self.project.evaluate.regression()
+            self.project.evaluate.regression(
+                mode=mode
+            )
 
     def _plot_confusion_matrix(self, _: dict[str, Any]) -> None:
         _, _, _, y_true = self.project.context.get_split_data()
@@ -457,7 +685,7 @@ class PlanBuilder:
         # Split → Train → Evaluate
         steps.append(PlanStep("split", {}))
         steps.append(PlanStep("train", {"model_name": model_name}))
-        steps.append(PlanStep("evaluate", {}))
+        steps.append(PlanStep("evaluate", {"mode": "full"}))
 
         # Optional
         for s in parsed_steps:

@@ -133,6 +133,18 @@ class Context:
 
     def mark_fitted(self) -> None:
         self._is_fitted = True
+        
+    def get_y_test(self):
+        return self._y_test
+
+    def get_y_train(self):
+        return self._y_train
+
+    def get_X_test(self):
+        return self._X_test
+
+    def get_X_train(self):
+        return self._X_train
 
     @property
     def is_fitted(self) -> bool:
