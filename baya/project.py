@@ -25,6 +25,7 @@ from .export import (
     ImageExporter,
     JSONExporter,
     PDFExporter,
+    ONNXExporter,
 )
 from .hooks import HookManager
 from .integrations import bootstrap_integrations
@@ -76,6 +77,7 @@ class Project:
                 "excel": ExcelExporter(self.context),
                 "pdf": PDFExporter(self.context),
                 "docx": DOCXExporter(self.context),
+                "onnx": ONNXExporter(self.context),
                 "image": ImageExporter(),
                 "graph": GraphExporter(self.context),
             },
