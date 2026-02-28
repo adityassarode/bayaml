@@ -1,0 +1,10 @@
+# Baya Default Configuration Template
+dataset_path: data.csv
+target: target
+task: regression
+metric: rmse
+seed: 42
+test_size: 0.2
+
+# Optional
+plugins: []
