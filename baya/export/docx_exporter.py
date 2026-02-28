@@ -1,137 +1,67 @@
-"""
-DOCX Exporter
-
-Exports:
-- DataFrame to Word table
-- Dictionary (metrics/report) to Word
-- Matplotlib figure to Word
-"""
-
 from __future__ import annotations
 
-from typing import Dict, Any, Optional
 from pathlib import Path
-
-import pandas as pd
-from docx import Document
-from docx.shared import Inches
-
-import matplotlib.figure
+from zipfile import ZIP_DEFLATED, ZipFile
 
 from ..context import Context
 
 
 class DOCXExporter:
-    """
-    Handles exporting data and reports to Word (.docx).
-    """
-
     def __init__(self, context: Context) -> None:
-        self.context = context
+        self._ctx = context
 
-    # -------------------------------------------------
-    # Export DataFrame
-    # -------------------------------------------------
-
-    def toDOCX(
-        self,
-        path: str,
-        title: Optional[str] = None,
-        max_rows: int = 50,
-    ) -> "DOCXExporter":
-        """
-        Export current DataFrame to Word table.
-        """
-        self.context.ensure_dataframe()
-        df: pd.DataFrame = self.context.dataframe
-
-        output_path = Path(path)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        document = Document()
-
-        if title:
-            document.add_heading(title, level=1)
-
-        df_subset = df.head(max_rows)
-
-        table = document.add_table(
-            rows=len(df_subset) + 1,
-            cols=len(df_subset.columns),
+    @staticmethod
+    def _escape_xml(text: str) -> str:
+        return (
+            text.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace('"', "&quot;")
+            .replace("'", "&apos;")
         )
 
-        # Header
-        for col_idx, col_name in enumerate(df_subset.columns):
-            table.rows[0].cells[col_idx].text = str(col_name)
+    def to_docx(self, path: str) -> Path:
+        out = Path(path)
+        out.parent.mkdir(parents=True, exist_ok=True)
 
-        # Data
-        for row_idx, row in enumerate(df_subset.values):
-            for col_idx, cell_value in enumerate(row):
-                table.rows[row_idx + 1].cells[col_idx].text = str(cell_value)
+        metrics = self._ctx.get_metrics()
+        lines = ["Baya Report"]
+        if metrics:
+            lines.extend(f"{k}: {v}" for k, v in metrics.items())
+        else:
+            lines.append("No metrics available.")
 
-        document.save(output_path)
+        paragraphs = "".join(
+            f"<w:p><w:r><w:t>{self._escape_xml(str(line))}</w:t></w:r></w:p>"
+            for line in lines
+        )
 
-        return self
+        content_types = """<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>
+<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\">
+  <Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/>
+  <Default Extension=\"xml\" ContentType=\"application/xml\"/>
+  <Override PartName=\"/word/document.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml\"/>
+</Types>
+"""
 
-    # -------------------------------------------------
-    # Export Dictionary / Metrics
-    # -------------------------------------------------
+        root_rels = """<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>
+<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">
+  <Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"word/document.xml\"/>
+</Relationships>
+"""
 
-    def exportDict(
-        self,
-        data: Dict[str, Any],
-        path: str,
-        title: str = "Report",
-    ) -> "DOCXExporter":
-        """
-        Export dictionary content into Word document.
-        """
-        output_path = Path(path)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+        document = f"""<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>
+<w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\">
+  <w:body>
+    {paragraphs}
+    <w:sectPr/>
+  </w:body>
+</w:document>
+"""
 
-        document = Document()
-        document.add_heading(title, level=1)
+        with ZipFile(out, "w", compression=ZIP_DEFLATED) as archive:
+            archive.writestr("[Content_Types].xml", content_types)
+            archive.writestr("_rels/.rels", root_rels)
+            archive.writestr("word/document.xml", document)
 
-        for key, value in data.items():
-            document.add_paragraph(f"{key}: {value}")
-
-        document.save(output_path)
-
-        return self
-
-    # -------------------------------------------------
-    # Export Matplotlib Figure
-    # -------------------------------------------------
-
-    def exportFigure(
-        self,
-        figure: matplotlib.figure.Figure,
-        path: str,
-        width: float = 6.0,
-    ) -> "DOCXExporter":
-        """
-        Export matplotlib figure into Word document.
-        """
-        output_path = Path(path)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        temp_image = output_path.with_suffix(".png")
-        figure.savefig(temp_image)
-
-        document = Document()
-        document.add_picture(str(temp_image), width=Inches(width))
-        document.save(output_path)
-
-        temp_image.unlink(missing_ok=True)
-
-        return self
-
-    # -------------------------------------------------
-    # Representation
-    # -------------------------------------------------
-
-    def __repr__(self) -> str:
-        rows, cols = (0, 0)
-        if self.context.dataframe is not None:
-            rows, cols = self.context.dataframe.shape
-        return f"<DOCXExporter rows={rows} cols={cols}>"
+        return out

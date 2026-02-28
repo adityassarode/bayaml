@@ -1,42 +1,36 @@
 from __future__ import annotations
+
 import numpy as np
 
 
 def _validate(y_true, y_pred):
-    y_true = np.asarray(y_true)
-    y_pred = np.asarray(y_pred)
-
-    if y_true.shape != y_pred.shape:
-        raise ValueError("Shape mismatch in classification metrics")
-
-    return y_true, y_pred
+    yt = np.asarray(y_true)
+    yp = np.asarray(y_pred)
+    if yt.shape != yp.shape:
+        raise ValueError("Shape mismatch.")
+    return yt, yp
 
 
 def accuracy(y_true, y_pred) -> float:
-    y_true, y_pred = _validate(y_true, y_pred)
-    return float(np.mean(y_true == y_pred))
+    yt, yp = _validate(y_true, y_pred)
+    return float(np.mean(yt == yp))
 
 
 def precision(y_true, y_pred) -> float:
-    y_true, y_pred = _validate(y_true, y_pred)
-    tp = np.sum((y_true == 1) & (y_pred == 1))
-    fp = np.sum((y_true == 0) & (y_pred == 1))
-    if tp + fp == 0:
-        return 0.0
-    return float(tp / (tp + fp))
+    yt, yp = _validate(y_true, y_pred)
+    tp = np.sum((yt == 1) & (yp == 1))
+    fp = np.sum((yt != 1) & (yp == 1))
+    return float(tp / (tp + fp)) if (tp + fp) else 0.0
 
 
 def recall(y_true, y_pred) -> float:
-    y_true, y_pred = _validate(y_true, y_pred)
-    tp = np.sum((y_true == 1) & (y_pred == 1))
-    fn = np.sum((y_true == 1) & (y_pred == 0))
-    if tp + fn == 0:
-        return 0.0
-    return float(tp / (tp + fn))
+    yt, yp = _validate(y_true, y_pred)
+    tp = np.sum((yt == 1) & (yp == 1))
+    fn = np.sum((yt == 1) & (yp != 1))
+    return float(tp / (tp + fn)) if (tp + fn) else 0.0
 
 
-METRICS = {
-    "accuracy": accuracy,
-    "precision": precision,
-    "recall": recall,
-}
+def f1(y_true, y_pred) -> float:
+    p = precision(y_true, y_pred)
+    r = recall(y_true, y_pred)
+    return float(2 * p * r / (p + r)) if (p + r) else 0.0

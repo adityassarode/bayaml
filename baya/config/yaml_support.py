@@ -1,17 +1,11 @@
 from __future__ import annotations
+
 from pathlib import Path
 from typing import Any, Dict
 
-try:
-    import yaml
-except ImportError:
-    yaml = None
+import yaml
 
 
 def load_yaml(path: Path) -> Dict[str, Any]:
-    if yaml is None:
-        raise RuntimeError(
-            "PyYAML is required for YAML config support."
-        )
-
-    return yaml.safe_load(path.read_text())
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    return dict(data or {})

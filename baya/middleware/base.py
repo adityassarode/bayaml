@@ -1,9 +1,6 @@
-from typing import Callable, Protocol
-from baya.context import Context
+class BaseMiddleware:
+    def before(self, context):
+        return None
 
-Step = Callable[[Context], None]
-
-
-class BaseMiddleware(Protocol):
-    def wrap(self, step: Step) -> Step:
-        ...
+    def after(self, context):
+        return None

@@ -1,17 +1,14 @@
-from typing import List
-from baya.context import Context
-from .base import BaseMiddleware, Step
-
-
 class MiddlewareManager:
     def __init__(self) -> None:
-        self._middlewares: List[BaseMiddleware] = []
+        self._items = []
 
-    def add(self, middleware: BaseMiddleware) -> None:
-        self._middlewares.append(middleware)
+    def use(self, middleware) -> None:
+        self._items.append(middleware)
 
-    def wrap(self, step: Step) -> Step:
-        wrapped = step
-        for mw in reversed(self._middlewares):
-            wrapped = mw.wrap(wrapped)
-        return wrapped
+    def before_all(self, context) -> None:
+        for item in self._items:
+            item.before(context)
+
+    def after_all(self, context) -> None:
+        for item in reversed(self._items):
+            item.after(context)
