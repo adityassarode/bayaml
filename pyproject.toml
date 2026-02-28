@@ -1,38 +1,16 @@
-# ================================
-# Build System
-# ================================
-
 [build-system]
-requires = ["hatchling>=1.18"]
-build-backend = "hatchling.build"
-
-
-# ================================
-# Project Metadata
-# ================================
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "baya"
-dynamic = ["version"]
+version = "0.1.0"
 description = "Baya – Modular ML Orchestration Framework for structured machine learning workflows."
 readme = "README.md"
 requires-python = ">=3.9"
 license = { file = "LICENSE" }
-
-authors = [
-  { name = "Aditya Sarode" }
-]
-
-keywords = [
-  "machine-learning",
-  "data-science",
-  "mlops",
-  "orchestration",
-  "pipeline",
-  "framework",
-  "ai"
-]
-
+authors = [{ name = "Aditya Sarode" }]
+keywords = ["machine-learning", "data-science", "mlops", "orchestration", "pipeline", "framework", "ai"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
@@ -46,105 +24,41 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
   "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-
 dependencies = [
   "pandas>=1.5",
   "numpy>=1.22",
   "scikit-learn>=1.2",
-  "matplotlib>=3.6",
+  "scipy>=1.10",
   "pyyaml>=6.0",
+  "matplotlib>=3.6",
 ]
-
-# ================================
-# Optional Dependencies
-# ================================
 
 [project.optional-dependencies]
-
-viz = [
-  "seaborn>=0.12",
-  "plotly>=5.15"
-]
-
-deep = [
-  "torch>=2.0",
-  "tensorflow>=2.12"
-]
-
-stats = [
-  "scipy>=1.10",
-  "statsmodels>=0.14"
-]
-
-export = [
-  "openpyxl>=3.1",
-  "python-docx>=0.8",
-  "reportlab>=4.0",
-  "pillow>=10.0"
-]
-
-dev = [
-  "pytest>=7.0",
-  "pytest-cov>=4.0",
-  "ruff>=0.1.0",
-  "mypy>=1.5",
-  "black>=23.0",
-  "build>=1.0",
-  "twine>=4.0"
-]
-
-# ================================
-# URLs
-# ================================
+dev = ["pytest", "ruff", "mypy"]
+viz = ["seaborn", "plotly"]
+deep = ["tensorflow", "torch"]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/baya"
-Documentation = "https://github.com/yourusername/baya/docs"
-Repository = "https://github.com/yourusername/baya"
-Issues = "https://github.com/yourusername/baya/issues"
-
-
-# ================================
-# CLI Entry
-# ================================
+Homepage = "https://baya-ml.dev"
+Documentation = "https://baya-ml.dev/docs"
+Repository = "https://github.com/adityasarode/baya"
+Issues = "https://github.com/adityasarode/baya/issues"
 
 [project.scripts]
 baya = "baya.cli.main:main"
 
+[tool.setuptools]
+include-package-data = true
 
-# ================================
-# Version Source
-# ================================
+[tool.setuptools.packages.find]
+include = ["baya*"]
 
-[tool.hatch.version]
-path = "baya/version.py"
-
-
-# ================================
-# Build Targets
-# ================================
-
-[tool.hatch.build.targets.wheel]
-packages = ["baya"]
-
-include = [
-  "baya/py.typed",
-  "baya/assets/*.yaml"
-]
-
-
-# ================================
-# Pytest
-# ================================
+[tool.setuptools.package-data]
+baya = ["py.typed", "assets/*.yaml"]
 
 [tool.pytest.ini_options]
 addopts = "-ra -q"
 testpaths = ["tests"]
-
-
-# ================================
-# Coverage
-# ================================
 
 [tool.coverage.run]
 source = ["baya"]
@@ -153,19 +67,9 @@ source = ["baya"]
 show_missing = true
 skip_covered = true
 
-
-# ================================
-# Black
-# ================================
-
 [tool.black]
 line-length = 88
 target-version = ["py39"]
-
-
-# ================================
-# Ruff
-# ================================
 
 [tool.ruff]
 line-length = 88
@@ -174,11 +78,6 @@ target-version = "py39"
 [tool.ruff.lint]
 select = ["E", "F", "B", "I"]
 ignore = []
-
-
-# ================================
-# MyPy
-# ================================
 
 [tool.mypy]
 python_version = "3.9"

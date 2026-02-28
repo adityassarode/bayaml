@@ -1,29 +1,20 @@
 from __future__ import annotations
-from typing import Dict, Any
+
+from typing import Any, Dict
 
 from .schema import ConfigSchema
 
 
-REQUIRED_FIELDS = {
-    "dataset_path",
-    "target",
-    "task",
-    "metric",
-    "seed",
-    "test_size",
-}
-
-
-def validate_config(raw: Dict[str, Any]) -> ConfigSchema:
-    missing = REQUIRED_FIELDS - raw.keys()
+def validate_config(data: Dict[str, Any]) -> ConfigSchema:
+    required = ["data_path", "target", "model"]
+    missing = [k for k in required if k not in data]
     if missing:
-        raise RuntimeError(f"Missing config fields: {sorted(missing)}")
-
+        raise ValueError(f"Missing config keys: {missing}")
     return ConfigSchema(
-        dataset_path=str(raw["dataset_path"]),
-        target=str(raw["target"]),
-        task=str(raw["task"]),
-        metric=str(raw["metric"]),
-        seed=int(raw["seed"]),
-        test_size=float(raw["test_size"]),
+        data_path=str(data["data_path"]),
+        target=str(data["target"]),
+        model=str(data["model"]),
+        task=str(data.get("task", "classification")),
+        test_size=float(data.get("test_size", 0.2)),
+        seed=int(data.get("seed", 42)),
     )

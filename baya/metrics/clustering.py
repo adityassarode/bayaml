@@ -1,12 +1,7 @@
 from __future__ import annotations
+
 import numpy as np
 
 
-def inertia(y_true, y_pred) -> float:
-    # placeholder metric — real clustering metrics require features
-    return float(np.var(y_pred))
-
-
-METRICS = {
-    "inertia": inertia,
-}
+def inertia(_, y_pred) -> float:
+    return float(np.var(np.asarray(y_pred)))

@@ -1,18 +1,6 @@
-"""
-Baya Clean Module
-
-Handles:
-- Missing values
-- Null removal
-- Duplicate removal
-- Column renaming
-- Type conversion
-- Row filtering
-"""
-
 from __future__ import annotations
 
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 import pandas as pd
 
@@ -20,191 +8,41 @@ from ..context import Context
 
 
 class CleanModule:
-    """
-    Data cleaning operations.
-    """
-
     def __init__(self, context: Context) -> None:
-        self.context = context
+        self._ctx = context
 
-    # -------------------------------------------------
-    # Missing Values
-    # -------------------------------------------------
-
-    def fillMissing(
-        self,
-        column: str,
-        strategy: str | Any,
-    ) -> "CleanModule":
-        """
-        Fill missing values in a column.
-
-        strategy:
-            "mean"
-            "median"
-            "mode"
-            custom value
-        """
-        self.context.ensure_dataframe()
-        df = self.context.dataframe
-
+    def fill_missing(self, column: str, strategy: Any = "mean") -> "CleanModule":
+        df = self._ctx.ensure_dataframe().copy()
         if column not in df.columns:
             raise ValueError(f"Column '{column}' not found.")
-
         if strategy == "mean":
             value = df[column].mean()
         elif strategy == "median":
             value = df[column].median()
         elif strategy == "mode":
-            value = df[column].mode()[0]
+            value = df[column].mode().iloc[0]
         else:
-            value = strategy  # custom value
-
+            value = strategy
         df[column] = df[column].fillna(value)
-
+        self._ctx.set_dataframe(df)
         return self
 
-    # -------------------------------------------------
-    # Drop Nulls
-    # -------------------------------------------------
-
-    def dropNulls(
-        self,
-        axis: int = 0,
-        how: str = "any",
-    ) -> "CleanModule":
-        """
-        Remove rows or columns containing null values.
-
-        axis:
-            0 = rows
-            1 = columns
-
-        how:
-            "any"
-            "all"
-        """
-        self.context.ensure_dataframe()
-
-        self.context.dataframe = self.context.dataframe.dropna(
-            axis=axis,
-            how=how,
-        )
-
+    def drop_nulls(self, axis: int = 0, how: str = "any") -> "CleanModule":
+        df = self._ctx.ensure_dataframe().dropna(axis=axis, how=how)
+        self._ctx.set_dataframe(df)
         return self
 
-    # -------------------------------------------------
-    # Drop Duplicates
-    # -------------------------------------------------
-
-    def dropDuplicates(
-        self,
-        subset: list[str] | None = None,
-        keep: str = "first",
-    ) -> "CleanModule":
-        """
-        Remove duplicate rows.
-        """
-        self.context.ensure_dataframe()
-
-        self.context.dataframe = self.context.dataframe.drop_duplicates(
-            subset=subset,
-            keep=keep,
-        )
-
+    def drop_duplicates(self, subset: Optional[list[str]] = None, keep: str = "first") -> "CleanModule":
+        df = self._ctx.ensure_dataframe().drop_duplicates(subset=subset, keep=keep)
+        self._ctx.set_dataframe(df)
         return self
 
-    # -------------------------------------------------
-    # Rename Columns
-    # -------------------------------------------------
-
-    def renameColumn(
-        self,
-        old_name: str,
-        new_name: str,
-    ) -> "CleanModule":
-        """
-        Rename a column.
-        """
-        self.context.ensure_dataframe()
-
-        if old_name not in self.context.dataframe.columns:
-            raise ValueError(f"Column '{old_name}' not found.")
-
-        self.context.dataframe = self.context.dataframe.rename(
-            columns={old_name: new_name}
-        )
-
+    def filter_rows(self, condition: str | Callable[[pd.DataFrame], pd.Series]) -> "CleanModule":
+        df = self._ctx.ensure_dataframe()
+        out = df.query(condition) if isinstance(condition, str) else df[condition(df)]
+        self._ctx.set_dataframe(out)
         return self
 
-    # -------------------------------------------------
-    # Change Data Type
-    # -------------------------------------------------
-
-    def changeType(
-        self,
-        column: str,
-        dtype: Any,
-    ) -> "CleanModule":
-        """
-        Change column data type.
-        """
-        self.context.ensure_dataframe()
-
-        if column not in self.context.dataframe.columns:
-            raise ValueError(f"Column '{column}' not found.")
-
-        self.context.dataframe[column] = self.context.dataframe[column].astype(
-            dtype
-        )
-
-        return self
-
-    # -------------------------------------------------
-    # Filter Rows
-    # -------------------------------------------------
-
-    def filterRows(
-        self,
-        condition: str | Callable[[pd.DataFrame], pd.Series],
-    ) -> "CleanModule":
-        """
-        Filter rows using:
-            - query string
-            - lambda returning boolean mask
-        """
-        self.context.ensure_dataframe()
-
-        df = self.context.dataframe
-
-        if isinstance(condition, str):
-            df = df.query(condition)
-        else:
-            mask = condition(df)
-            df = df[mask]
-
-        self.context.dataframe = df
-
-        return self
-
-    # -------------------------------------------------
-    # Reset Index
-    # -------------------------------------------------
-
-    def resetIndex(self) -> "CleanModule":
-        """
-        Reset DataFrame index.
-        """
-        self.context.ensure_dataframe()
-        self.context.dataframe = self.context.dataframe.reset_index(drop=True)
-        return self
-
-    # -------------------------------------------------
-    # Representation
-    # -------------------------------------------------
-
-    def __repr__(self) -> str:
-        rows, cols = (0, 0)
-        if self.context.dataframe is not None:
-            rows, cols = self.context.dataframe.shape
-        return f"<CleanModule rows={rows} cols={cols}>"
+    # backwards compat aliases
+    def fillMissing(self, column: str, strategy: Any) -> "CleanModule":
+        return self.fill_missing(column, strategy)
