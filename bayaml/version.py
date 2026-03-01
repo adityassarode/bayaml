@@ -10,4 +10,4 @@ from __future__ import annotations
 __all__ = ["__version__"]
 
 # Follow Semantic Versioning: MAJOR.MINOR.PATCH
-__version__ = "0.1.5"
+__version__ = "0.1.6"

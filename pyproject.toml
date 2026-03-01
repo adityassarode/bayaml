@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bayaml"
-version = "0.1.5"
+version = "0.1.6"
 description = "Bayaml is a lightweight ML & AI orchestration framework that automates data loading, preprocessing, model training, evaluation, and deployment through a deterministic, privacy-safe Auto Mode with built-in AutoML. Built and maintained by Aditya Sarode."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -43,6 +43,7 @@ deep = ["tensorflow", "torch"]
 [project.urls]
 GitHub = "https://github.com/adityassarode"
 Repository = "https://github.com/adityassarode/bayaml"
+Documentation = "https://adityassarode.github.io/bayaml"
 Issues = "https://github.com/adityassarode/bayaml/issues"
 Instagram = "https://www.instagram.com/adityassarode"
 Buymeacoffee = "https://www.buymeacoffee.com/adityassarode"

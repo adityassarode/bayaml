@@ -9,6 +9,10 @@
   <img src="https://img.shields.io/badge/GitHub-adityassarode-black?style=for-the-badge&logo=github&logoColor=white" />  
 </a>  
   
+  <a href="https://adityassarode.github.io/bayaml/" target="_blank">
+    <img src="https://img.shields.io/badge/📘%20Read%20Documentation-0A66C2?style=for-the-badge&logo=readthedocs&logoColor=white" />
+  </a>
+
 <a href="https://www.instagram.com/adityassarode">  
   <img src="https://img.shields.io/badge/Instagram-@adityassarode-E4405F?style=for-the-badge&logo=instagram&logoColor=white" />  
 </a>  

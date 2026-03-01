@@ -16,6 +16,7 @@ __Repository__ = "https://github.com/adityassarode/bayaml"
 __Issues__ = "https://github.com/adityassarode/bayaml/issues"
 __Instagram__ = "https://www.instagram.com/adityassarode"
 __Ko_fi__ = "https://ko-fi.com/adityassarode"
+__Documentation__ = "https://adityassarode.github.io/bayaml"
 
 
 def info(open_website: bool = False) -> None:
@@ -70,10 +71,13 @@ Export Options:
     print(f"Author  : {__author__}")
     print(f"GitHub  : {__GitHub__}")
     print(f"Repository : {__Repository__}")
+    print(f"Documentation : {__Documentation__}")
     print(f"Issues : {__Issues__}")
     print(f"Instagram : {__Instagram__}")
     print(f"Buymeacoffee : {__buy_me_a_coffee__}")
     print(f"Ko-fi : {__Ko_fi__}")
+    
+    
     print("""
 ------------------------------------------------------------
 
