@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
 
-from baya.config import ConfigSchema
-from baya.project import Project
+from bayaml.config import ConfigSchema
+from bayaml.project import Project
 
 
 def _write_data(tmp_path: Path) -> Path:

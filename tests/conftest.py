@@ -2,8 +2,8 @@ import os
 
 import pytest
 
-from baya.hooks import HookManager
-from baya.integrations.model_registry import ModelRegistry
+from bayaml.hooks import HookManager
+from bayaml.integrations.model_registry import ModelRegistry
 
 
 @pytest.fixture(autouse=True)

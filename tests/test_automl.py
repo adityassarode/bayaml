@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from baya import baya, list_models, register_model
-from baya.leaderboard import load_leaderboard
+from bayaml import bayaml, list_models, register_model
+from bayaml.leaderboard import load_leaderboard
 
 
 def test_baya_automl_runs_and_persists(tmp_path: Path) -> None:
@@ -14,7 +14,7 @@ def test_baya_automl_runs_and_persists(tmp_path: Path) -> None:
     try:
         # isolate default persistence location
         os.chdir(tmp_path)
-        result = baya(df, target="y", config={"folds": 3})
+        result = bayaml(df, target="y", config={"folds": 3})
         assert result["best_model"]
         assert isinstance(result["best_score"], float)
 

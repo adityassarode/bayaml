@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from baya.tracking import Tracker
+from bayaml.tracking import Tracker
 
 
 def test_tracker_finalize(tmp_path: Path):

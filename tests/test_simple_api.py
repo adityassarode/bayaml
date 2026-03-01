@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from baya import Baya, quick_train
+from bayaml import Bayaml, quick_train
 
 
 def test_quick_train_classification_dataframe() -> None:
@@ -11,9 +11,9 @@ def test_quick_train_classification_dataframe() -> None:
     assert "accuracy" in metrics
 
 
-def test_fluent_baya_regression_csv(tmp_path: Path) -> None:
+def test_fluent_bayaml_regression_csv(tmp_path: Path) -> None:
     csv = tmp_path / "data.csv"
     csv.write_text("x,y\n1,2.0\n2,4.0\n3,6.0\n4,8.0\n", encoding="utf-8")
 
-    metrics = Baya(csv, target="y", test_size=0.25).train("linear_regression").evaluate()
+    metrics = Bayaml(csv, target="y", test_size=0.25).train("linear_regression").evaluate()
     assert "mse" in metrics

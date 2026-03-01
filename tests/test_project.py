@@ -1,6 +1,6 @@
 import pandas as pd
 
-from baya.project import Project
+from bayaml.project import Project
 
 
 def test_project_train_classification_flow(tmp_path):
@@ -17,7 +17,7 @@ def test_project_train_classification_flow(tmp_path):
 
 def test_train_auto_predict_enables_eval(tmp_path):
     import pandas as pd
-    from baya.project import Project
+    from bayaml.project import Project
 
     df = pd.DataFrame({"x": [1, 2, 3, 4, 5, 6], "y": [0, 0, 0, 1, 1, 1]})
     p = Project(df, target="y", workspace=tmp_path)

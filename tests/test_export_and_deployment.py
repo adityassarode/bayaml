@@ -4,8 +4,8 @@ from zipfile import ZipFile
 
 import pandas as pd
 
-from baya.deployment import export_production_bundle
-from baya.project import Project
+from bayaml.deployment import export_production_bundle
+from bayaml.project import Project
 
 
 def _trained_project(tmp_path):

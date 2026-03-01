@@ -10,6 +10,6 @@ def test_cli_run(tmp_path: Path):
     cfg = tmp_path / "workflow.json"
     cfg.write_text(json.dumps({"data_path": str(data), "target": "y", "model": "logistic_regression", "task": "classification"}), encoding="utf-8")
 
-    cmd = [sys.executable, "-m", "baya", "run", str(cfg)]
+    cmd = [sys.executable, "-m", "bayaml", "run", str(cfg)]
     result = subprocess.run(cmd, capture_output=True, text=True)
     assert result.returncode == 0, result.stderr

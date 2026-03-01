@@ -1,5 +1,5 @@
 import pandas as pd
-import baya as by
+import bayaml as by
 
 
 def main() -> None:

@@ -1,7 +1,7 @@
 import pandas as pd
 
-from baya.orchestration import Phase
-from baya.project import Project
+from bayaml.orchestration import Phase
+from bayaml.project import Project
 
 
 def test_pipeline_executes_steps(tmp_path):

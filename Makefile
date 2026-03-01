@@ -1,10 +1,10 @@
 # =====================================
-# Baya - ML Orchestration Framework
+# Bayaml - ML Orchestration Framework
 # =====================================
 
 PYTHON=python
 PIP=pip
-PACKAGE=baya
+PACKAGE=bayaml
 
 .DEFAULT_GOAL := help
 
@@ -86,7 +86,7 @@ docs:
 # =========================
 
 run:
-	$(PYTHON) -m baya
+	$(PYTHON) -m bayaml
 
 # =========================
 # Cleanup

@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bayaml"
-version = "0.1.4"
-description = "Baya – Modular ML Orchestration Framework for structured machine learning workflows."
+version = "0.1.5"
+description = "Bayaml is a lightweight ML & AI orchestration framework that automates data loading, preprocessing, model training, evaluation, and deployment through a deterministic, privacy-safe Auto Mode with built-in AutoML. Built and maintained by Aditya Sarode."
 readme = "README.md"
 requires-python = ">=3.9"
 license = { file = "LICENSE" }
 authors = [{ name = "Aditya Sarode" }]
-keywords = ["machine-learning", "data-science", "mlops", "orchestration", "pipeline", "framework", "ai"]
+keywords = ["machine-learning", "data-science", "mlops", "orchestration", "pipeline", "framework", "ai", "bayaml", "BAYAML"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
@@ -42,31 +42,31 @@ deep = ["tensorflow", "torch"]
 
 [project.urls]
 GitHub = "https://github.com/adityassarode"
-Repository = "https://github.com/adityassarode/baya"
-Issues = "https://github.com/adityassarode/baya/issues"
+Repository = "https://github.com/adityassarode/bayaml"
+Issues = "https://github.com/adityassarode/bayaml/issues"
 Instagram = "https://www.instagram.com/adityassarode"
 Buymeacoffee = "https://www.buymeacoffee.com/adityassarode"
 Ko-fi = "https://ko-fi.com/adityassarode"
 
 
 [project.scripts]
-baya = "baya.cli.main:main"
+bayaml = "bayaml.cli.main:main"
 
 [tool.setuptools]
 include-package-data = true
 
 [tool.setuptools.packages.find]
-include = ["baya*"]
+include = ["bayaml*"]
 
 [tool.setuptools.package-data]
-baya = ["py.typed", "assets/*.yaml"]
+bayaml = ["py.typed", "assets/*.yaml"]
 
 [tool.pytest.ini_options]
 addopts = "-ra -q"
 testpaths = ["tests"]
 
 [tool.coverage.run]
-source = ["baya"]
+source = ["bayaml"]
 
 [tool.coverage.report]
 show_missing = true

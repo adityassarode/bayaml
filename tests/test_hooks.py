@@ -1,4 +1,4 @@
-from baya.hooks import EventType, HookManager
+from bayaml.hooks import EventType, HookManager
 
 
 def test_hooks_emit():

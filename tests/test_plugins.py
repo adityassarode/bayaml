@@ -1,4 +1,4 @@
-from baya.plugins import BasePlugin, PluginRegistry, load_plugins
+from bayaml.plugins import BasePlugin, PluginRegistry, load_plugins
 
 
 class DemoPlugin(BasePlugin):

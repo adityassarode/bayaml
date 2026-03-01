@@ -3,7 +3,7 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from baya.project import Project
+from bayaml.project import Project
 
 
 def test_plan_hash_deterministic_preview() -> None:

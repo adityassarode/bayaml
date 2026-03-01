@@ -3,11 +3,11 @@
 # 📄 CONTRIBUTING.md
 
 ````markdown
-# Contributing to Baya
+# Contributing to Bayaml
 
-First of all, thank you for considering contributing to Baya.
+First of all, thank you for considering contributing to Bayaml.
 
-Baya is designed to be a serious ML orchestration framework.  
+Bayaml is designed to be a serious ML orchestration framework.  
 We welcome improvements in performance, architecture, documentation, integrations, and testing.
 
 ---
@@ -41,7 +41,7 @@ There are multiple ways to contribute:
 ## 1️⃣ Clone Repository
 
 ```bash
-git clone https://github.com/your-username/baya.git
+git clone https://github.com/adityassarode/bayaml.git
 cd baya
 ````
 
@@ -73,7 +73,7 @@ pytest
 To run with coverage:
 
 ```bash
-pytest --cov=baya
+pytest --cov=bayaml
 ```
 
 ---
@@ -135,7 +135,7 @@ PR must include:
 
 # Architecture Contribution Rules
 
-Baya follows layered architecture:
+Bayaml follows layered architecture:
 
 core → orchestration → tracking → plugins → cli
 
@@ -156,7 +156,7 @@ Example: Adding XGBoost
 1. Create folder:
 
 ```
-baya/integrations/xgboost/
+bayaml/integrations/xgboost/
 ```
 
 2. Implement backend inheriting from BaseBackend
@@ -174,7 +174,7 @@ baya/integrations/xgboost/
 1. Create external package:
 
 ```
-baya-myplugin/
+bayaml-myplugin/
 ```
 
 2. Implement BasePlugin
@@ -182,8 +182,8 @@ baya-myplugin/
 3. Expose entry point in pyproject.toml:
 
 ```toml
-[project.entry-points."baya.plugins"]
-myplugin = "baya_myplugin.plugin:MyPlugin"
+[project.entry-points."bayaml.plugins"]
+myplugin = "bayaml_myplugin.plugin:MyPlugin"
 ```
 
 ---
@@ -234,7 +234,7 @@ DO NOT open a public issue.
 
 Instead email:
 
-[security@baya-framework.org](mailto:security@baya-framework.org)
+[security@bayaml-framework.org](mailto:security@bayaml-framework.org)
 
 ---
 
@@ -267,7 +267,7 @@ By contributing, you agree that your contributions will be licensed under the pr
 
 # Thank You
 
-Baya aims to become a serious ML orchestration ecosystem.
+Bayaml aims to become a serious ML orchestration ecosystem.
 
 Your contribution helps move it forward.
 

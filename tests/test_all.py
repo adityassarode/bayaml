@@ -1,4 +1,4 @@
-from baya import Project
+from bayaml import Project
 import pandas as pd
 
 DATA_URL = "https://raw.githubusercontent.com/mwaskom/seaborn-data/master/tips.csv"
